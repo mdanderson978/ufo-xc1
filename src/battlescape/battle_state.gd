@@ -18,6 +18,7 @@ var rng := RandomNumberGenerator.new()
 var visible_tiles: Dictionary = {"xcom": {}, "alien": {}}
 var spotted_enemies: Dictionary = {"xcom": PackedStringArray(), "alien": PackedStringArray()}
 var outcome: String = OUTCOME_ACTIVE
+var reaction_fire_enabled: bool = true
 
 static func create(initial_map: BattleMap, item_table: Dictionary, seed: int = 0) -> BattleState:
 	var state := BattleState.new()
@@ -91,6 +92,7 @@ func move_unit(unit_id: String, path: Array[Vector2i]) -> Dictionary:
 		return _error(ERR_INVALID_DATA)
 
 	var start := unit.pos
+	var reactions: Array[Dictionary] = []
 	for destination: Vector2i in path:
 		var occupant := _unit_at(destination)
 		if occupant != null and occupant != unit:
@@ -98,13 +100,19 @@ func move_unit(unit_id: String, path: Array[Vector2i]) -> Dictionary:
 		var result := BattleRules.move_step(map, unit, destination)
 		if result != OK:
 			return _error(result)
-	_refresh_visibility()
+		_refresh_visibility()
+		if reaction_fire_enabled:
+			reactions.append_array(_resolve_reaction_fire(unit))
+		_update_outcome()
+		if outcome != OUTCOME_ACTIVE or not unit.is_alive():
+			break
 	return {
 		"ok": true,
 		"unit_id": unit.id,
 		"from": [start.x, start.y],
 		"to": [unit.pos.x, unit.pos.y],
 		"tu_current": unit.tu_current,
+		"reactions": reactions,
 		"outcome": outcome
 	}
 
@@ -209,6 +217,60 @@ func _update_outcome() -> void:
 		outcome = OUTCOME_XCOM_WIN
 	else:
 		outcome = OUTCOME_ACTIVE
+
+func _resolve_reaction_fire(mover: BattleUnit) -> Array[Dictionary]:
+	var reactions: Array[Dictionary] = []
+	if mover == null or not mover.is_alive():
+		return reactions
+	var reaction_team := _opposing_team(mover.team)
+	for reactor: BattleUnit in living_units(reaction_team):
+		if not mover.is_alive():
+			break
+		if not _can_react_to(reactor, mover):
+			continue
+		var chance := _reaction_chance(reactor, mover)
+		var roll := rng.randi_range(1, 100)
+		if roll > chance:
+			reactions.append({
+				"ok": true,
+				"type": "reaction_check",
+				"actor": reactor.id,
+				"target": mover.id,
+				"roll": roll,
+				"chance": chance,
+				"fired": false
+			})
+			continue
+		var result := BattleRules.attack(map, reactor, mover, items, "snap", rng)
+		result["type"] = "reaction_fire"
+		result["actor"] = reactor.id
+		result["target"] = mover.id
+		result["roll_reaction"] = roll
+		result["reaction_chance"] = chance
+		result["fired"] = result.get("ok", false)
+		reactions.append(result)
+		_refresh_visibility()
+	return reactions
+
+func _can_react_to(reactor: BattleUnit, mover: BattleUnit) -> bool:
+	if reactor == null or mover == null or not reactor.is_alive() or not mover.is_alive():
+		return false
+	if reactor.team == mover.team:
+		return false
+	var weapon_id := reactor.primary_weapon_id()
+	var weapon: Dictionary = items.get(weapon_id, {})
+	if weapon.is_empty() or not weapon.get("accuracy", {}).has("snap"):
+		return false
+	var tu_cost := int(ceil(float(reactor.stats.get("tu", 0)) * float(weapon.get("tu_percent", {}).get("snap", 0)) / 100.0))
+	if reactor.tu_current < tu_cost:
+		return false
+	if not spotted_enemies[reactor.team].has(mover.id):
+		return false
+	return BattleRules.can_see(map, reactor.pos, mover.pos, int(reactor.stats.get("vision_range", 20)))
+
+func _reaction_chance(reactor: BattleUnit, mover: BattleUnit) -> int:
+	var reaction_delta := int(reactor.stats.get("reactions", 0)) - int(mover.stats.get("reactions", 0))
+	return clampi(50 + reaction_delta, 5, 95)
 
 func _unit_at(pos: Vector2i) -> BattleUnit:
 	for unit_id: String in unit_order:

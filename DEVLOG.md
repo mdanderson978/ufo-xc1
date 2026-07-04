@@ -2,6 +2,35 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 reaction fire
+
+Movement now risks enemy fire. This is the first deterministic, headless
+reaction-fire implementation and is intentionally scoped to movement triggers.
+
+### Step 1: movement-triggered reactions
+- `BattleState.move_unit()` now resolves movement step by step.
+- After each step, visibility refreshes and opposing living units may react if
+  they can see the mover, have a snap-capable weapon, and have enough TU.
+- Reaction chance is based on reactor reactions versus mover reactions, capped
+  between 5% and 95%.
+- Reaction shots spend TU through `BattleRules.attack()` and can damage or kill
+  the mover. If the mover dies, the remaining path is cancelled.
+
+### Step 2: action results
+- Movement results now include a `reactions` array containing reaction checks
+  and fired reaction shots.
+- The debug Battlescape status line summarizes reaction-fire shots and hits
+  after player movement.
+
+### Step 3: tests
+- Added deterministic coverage for reaction fire triggering, TU spending, and
+  reaction fire killing a mover and stopping the path.
+- Existing movement tests opt out with `reaction_fire_enabled = false` when
+  they are testing movement in isolation.
+
+### Commit note
+- Intended commit boundary: `Phase 2: add reaction fire`.
+
 ## 2026-07-04 — Phase 2 basic alien AI
 
 The debug Battlescape now has an opposing turn. This is the first simple AI

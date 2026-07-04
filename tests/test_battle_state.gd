@@ -51,6 +51,7 @@ func test_end_turn_flips_team_and_refreshes_tu() -> void:
 
 func test_move_unit_rejects_inactive_and_occupied_tiles() -> void:
 	var state := _simple_state()
+	state.reaction_fire_enabled = false
 	state.begin_battle()
 	var alien_move := state.move_unit("sectoid_1", [Vector2i(4, 1)])
 	assert_false(alien_move["ok"], "alien cannot move during XCOM turn")
@@ -59,6 +60,7 @@ func test_move_unit_rejects_inactive_and_occupied_tiles() -> void:
 
 func test_move_unit_spends_tu_and_refreshes_visibility() -> void:
 	var state := _simple_state()
+	state.reaction_fire_enabled = false
 	state.begin_battle()
 	var unit := state.get_unit("xcom_1")
 	var before := unit.tu_current
@@ -67,6 +69,31 @@ func test_move_unit_spends_tu_and_refreshes_visibility() -> void:
 	assert_eq(unit.pos, Vector2i(2, 1))
 	assert_eq(unit.tu_current, before - int(terrain["grass"]["tu_cost"]))
 	assert_true(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_eq(result["reactions"].size(), 0)
+
+func test_reaction_fire_triggers_on_visible_movement() -> void:
+	var state := _reaction_state(35, 7)
+	state.begin_battle()
+	var alien := state.get_unit("sectoid_1")
+	var before_alien_tu := alien.tu_current
+	var result := state.move_unit("xcom_1", [Vector2i(2, 1)])
+	assert_true(result["ok"])
+	assert_gt(result["reactions"].size(), 0)
+	var fired := false
+	for reaction: Dictionary in result["reactions"]:
+		if reaction.get("type") == "reaction_fire":
+			fired = true
+	assert_true(fired, "expected alien reaction fire")
+	assert_lt(alien.tu_current, before_alien_tu)
+
+func test_reaction_fire_can_kill_mover_and_stop_path() -> void:
+	var state := _reaction_state(1, 7)
+	state.begin_battle()
+	var result := state.move_unit("xcom_1", [Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1)])
+	assert_true(result["ok"])
+	assert_eq(state.get_unit("xcom_1").health_current, 0)
+	assert_eq(state.get_unit("xcom_1").pos, Vector2i(2, 1))
+	assert_eq(state.outcome, BattleState.OUTCOME_ALIEN_WIN)
 
 func test_attack_unit_updates_outcome_when_last_alien_dies() -> void:
 	var state := _simple_state()
@@ -96,6 +123,31 @@ func _simple_state() -> BattleState:
 	var state := BattleState.create(map, items, 4)
 	assert_eq(state.add_unit(BattleUnit.from_soldier(_soldier_record(1), Vector2i(1, 1))), OK)
 	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", DataRegistry.get_record("aliens", "sectoid_soldier"), Vector2i(5, 1))), OK)
+	return state
+
+func _reaction_state(xcom_health: int, seed: int) -> BattleState:
+	var reaction_items := items.duplicate(true)
+	reaction_items["reaction_test_gun"] = {
+		"name": "Reaction Test Gun",
+		"category": "weapon",
+		"damage": 99,
+		"accuracy": {"snap": 200},
+		"tu_percent": {"snap": 1}
+	}
+	var map := BattleMap.new(8, 3, terrain)
+	var state := BattleState.create(map, reaction_items, seed)
+	var soldier := _soldier_record(1)
+	soldier["stats"]["health"] = xcom_health
+	soldier["stats"]["reactions"] = 0
+	assert_eq(state.add_unit(BattleUnit.from_soldier(soldier, Vector2i(1, 1))), OK)
+
+	var alien_data := DataRegistry.get_record("aliens", "sectoid_soldier").duplicate(true)
+	var alien_stats: Dictionary = alien_data["stats"].duplicate(true)
+	alien_stats["reactions"] = 100
+	alien_stats["firing_accuracy"] = 200
+	alien_data["stats"] = alien_stats
+	alien_data["loadout"] = {"right_hand": "reaction_test_gun"}
+	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", alien_data, Vector2i(5, 1))), OK)
 	return state
 
 func _soldier_record(id: int) -> Dictionary:

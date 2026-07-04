@@ -123,7 +123,12 @@ func _handle_tile_click(tile_pos: Vector2i) -> void:
 		return
 	var result := _state.move_unit(selected.id, path)
 	if result.get("ok", false):
-		_set_status("%s moved to %s. TU: %d" % [selected.name, selected.pos, selected.tu_current])
+		_set_status("%s moved to %s. TU: %d%s" % [
+			selected.name,
+			selected.pos,
+			selected.tu_current,
+			_summarize_reactions(result.get("reactions", []))
+		])
 	else:
 		_set_status("Move failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -187,6 +192,19 @@ func _summarize_alien_actions(actions: Array[Dictionary]) -> String:
 		waits,
 		_state.active_team
 	]
+
+func _summarize_reactions(reactions: Array) -> String:
+	if reactions.is_empty():
+		return ""
+	var fired := 0
+	var hits := 0
+	for reaction: Dictionary in reactions:
+		if reaction.get("type") != "reaction_fire":
+			continue
+		fired += 1
+		if reaction.get("hit", false):
+			hits += 1
+	return " | Reaction fire: %d shots, %d hits" % [fired, hits]
 
 func _draw() -> void:
 	if _state == null:
