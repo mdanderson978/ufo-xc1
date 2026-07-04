@@ -2,6 +2,32 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 debug battle campaign handoff
+
+The debug Battlescape now closes the tactical-to-campaign loop in the running
+app. Finished debug battles apply their result to `GameState`, emit the existing
+`battle_finished` signal, and guard against duplicate result application.
+
+### Step 1: live campaign source
+- The debug Battlescape now starts battles from `GameState.campaign` when a
+  campaign is active.
+- If no campaign exists, the debug view creates one so the skirmish entry point
+  still works in isolation.
+
+### Step 2: single finish path
+- Added a guarded `_finish_battle()` path that applies `BattleState.battle_result()`
+  through `GameState.apply_battle_result()`.
+- The same path emits `EventBus.battle_finished`.
+- Move, attack, and alien-turn completion now all use this finish path.
+
+### Step 3: tests
+- Added a scene-level smoke test that forces a debug battle win, verifies
+  campaign score/soldier mission application, verifies the event emission, and
+  confirms repeat finish calls do not double-apply rewards.
+
+### Commit note
+- Intended commit boundary: `Phase 2: wire debug battle campaign handoff`.
+
 ## 2026-07-04 — Phase 2 campaign rewards
 
 Battle rewards now land in campaign state instead of stopping at the tactical

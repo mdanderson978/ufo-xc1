@@ -18,6 +18,7 @@ var _seed: int = 1001
 var _ufo_id: String = "small_scout"
 var _turn_label: Label
 var _status_label: Label
+var _battle_result_applied: bool = false
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -73,8 +74,9 @@ func _build_chrome() -> void:
 	add_child(_status_label)
 
 func _start_debug_battle() -> void:
-	var campaign := CampaignFactory.new_campaign(DataRegistry, _seed)
-	var base: Dictionary = campaign["bases"][0]
+	if not GameState.campaign_active or not GameState.campaign.has("bases") or (GameState.campaign["bases"] as Array).is_empty():
+		GameState.new_campaign(_seed)
+	var base: Dictionary = GameState.campaign["bases"][0]
 	var soldiers: Array = []
 	for i in range(mini(4, base["soldiers"].size())):
 		var soldier: Dictionary = base["soldiers"][i].duplicate(true)
@@ -82,6 +84,7 @@ func _start_debug_battle() -> void:
 		soldiers.append(soldier)
 	_state = BattleState.from_crash_site(DataRegistry, _ufo_id, soldiers, _seed)
 	_selected_unit_id = ""
+	_battle_result_applied = false
 	_set_status("Select an XCOM unit, then click a tile to move or a visible alien to fire.")
 	_update_turn_label()
 	queue_redraw()
@@ -130,7 +133,7 @@ func _handle_tile_click(tile_pos: Vector2i) -> void:
 			_summarize_reactions(result.get("reactions", [])) + _summarize_morale(result.get("morale_events", []))
 		])
 		if _state.outcome != BattleState.OUTCOME_ACTIVE:
-			_set_status(_battle_result_summary())
+			_set_status(_finish_battle())
 	else:
 		_set_status("Move failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -156,7 +159,7 @@ func _attack_selected(target: BattleUnit) -> void:
 			])
 			_set_status(_status_label.text + _summarize_morale(result.get("morale_events", [])))
 		else:
-			_set_status(_battle_result_summary())
+			_set_status(_finish_battle())
 	else:
 		_set_status("Attack failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -170,9 +173,9 @@ func _on_end_turn_pressed() -> void:
 			var actions: Array[Dictionary] = BattleAIScript.run_alien_turn(_state)
 			if _state.outcome == BattleState.OUTCOME_ACTIVE:
 				_state.end_turn()
-			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else _summarize_alien_actions(actions) + _summarize_morale(result.get("morale_events", [])))
+			_set_status(_finish_battle() if _state.outcome != BattleState.OUTCOME_ACTIVE else _summarize_alien_actions(actions) + _summarize_morale(result.get("morale_events", [])))
 		else:
-			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else "Turn advanced. Active team: %s%s" % [_state.active_team, _summarize_morale(result.get("morale_events", []))])
+			_set_status(_finish_battle() if _state.outcome != BattleState.OUTCOME_ACTIVE else "Turn advanced. Active team: %s%s" % [_state.active_team, _summarize_morale(result.get("morale_events", []))])
 	else:
 		_set_status("End turn failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -229,6 +232,17 @@ func _summarize_morale(events: Array) -> String:
 
 func _battle_result_summary() -> String:
 	var result := _state.battle_result()
+	return _format_battle_result(result)
+
+func _finish_battle() -> String:
+	var result := _state.battle_result()
+	if not _battle_result_applied:
+		GameState.apply_battle_result(result)
+		EventBus.battle_finished.emit(result)
+		_battle_result_applied = true
+	return _format_battle_result(result)
+
+func _format_battle_result(result: Dictionary) -> String:
 	var recovered := result["recovered_items"] as Dictionary
 	var recovered_parts: Array[String] = []
 	for item_id: String in recovered:

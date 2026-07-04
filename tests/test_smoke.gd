@@ -43,3 +43,33 @@ func test_save_load_round_trip() -> void:
 	# Campaign state is canonical (Jsonish.normalised) at creation and load,
 	# so the round-trip must be byte-identical.
 	assert_eq(JSON.stringify(GameState.to_save_dict()), JSON.stringify(before))
+
+func test_debug_battlescape_applies_finished_battle_once() -> void:
+	GameState.new_campaign(1001)
+	var battle_results: Array[Dictionary] = []
+	var handler := func(result: Dictionary) -> void:
+		battle_results.append(result)
+	EventBus.battle_finished.connect(handler)
+
+	var scene: PackedScene = load("res://src/battlescape/battlescape.tscn")
+	var node: Control = scene.instantiate()
+	add_child(node)
+	await get_tree().process_frame
+
+	for unit: BattleUnit in node._state.living_units(BattleUnit.TEAM_ALIEN):
+		unit.health_current = 0
+	var summary := node._finish_battle() as String
+	var score_after_first := int(GameState.campaign["score"]["month_xcom"])
+	var missions_after_first := int(GameState.campaign["bases"][0]["soldiers"][0]["missions"])
+	node._finish_battle()
+
+	assert_true(summary.begins_with("Battle xcom_win"))
+	assert_gt(score_after_first, 0)
+	assert_eq(GameState.campaign["score"]["month_xcom"], score_after_first)
+	assert_eq(GameState.campaign["bases"][0]["soldiers"][0]["missions"], missions_after_first)
+	assert_eq(battle_results.size(), 1)
+
+	node.queue_free()
+	await get_tree().process_frame
+	if EventBus.battle_finished.is_connected(handler):
+		EventBus.battle_finished.disconnect(handler)
