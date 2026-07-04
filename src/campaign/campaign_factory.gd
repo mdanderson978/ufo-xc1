@@ -109,6 +109,13 @@ static func apply_battle_result(campaign: Dictionary, battle_result: Dictionary,
 	var mission_kills: Dictionary = battle_result.get("xcom_kills", {})
 	var mission_xp: Dictionary = battle_result.get("xcom_xp", {})
 	var mission_wounds: Dictionary = battle_result.get("xcom_wounds", {})
+	var recovered_items: Dictionary = battle_result.get("recovered_items", {})
+
+	updated["score"]["month_xcom"] = int(updated["score"].get("month_xcom", 0)) + int(battle_result.get("score_xcom", 0))
+	var stores: Dictionary = base.get("stores", {})
+	for item_id: String in recovered_items:
+		stores[item_id] = int(stores.get(item_id, 0)) + int(recovered_items[item_id])
+	base["stores"] = stores
 
 	var participants := survivors.duplicate()
 	for unit_id: String in losses:

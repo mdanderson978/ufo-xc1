@@ -56,15 +56,24 @@ func test_apply_battle_result_updates_soldier_records() -> void:
 		"xcom_losses": PackedStringArray(["xcom_2"]),
 		"xcom_kills": {"xcom_1": 1, "xcom_2": 2},
 		"xcom_xp": {"xcom_1": 35, "xcom_2": 50},
-		"xcom_wounds": {"xcom_1": 9, "xcom_2": 12}
+		"xcom_wounds": {"xcom_1": 9, "xcom_2": 12},
+		"score_xcom": 17,
+		"recovered_items": {"alien_alloys": 2, "rifle": 1}
 	}
 	var updated := CampaignFactory.apply_battle_result(campaign, battle_result)
 	var original_soldier: Dictionary = campaign["bases"][0]["soldiers"][0]
+	var original_stores: Dictionary = campaign["bases"][0]["stores"]
 	var survivor: Dictionary = updated["bases"][0]["soldiers"][0]
 	var casualty: Dictionary = updated["bases"][0]["soldiers"][1]
 	var uninvolved: Dictionary = updated["bases"][0]["soldiers"][2]
+	var stores: Dictionary = updated["bases"][0]["stores"]
 
 	assert_eq(original_soldier["missions"], 0, "campaign input should not be mutated")
+	assert_false(original_stores.has("alien_alloys"), "campaign input stores should not be mutated")
+	assert_eq(campaign["score"]["month_xcom"], 0)
+	assert_eq(updated["score"]["month_xcom"], 17)
+	assert_eq(stores["alien_alloys"], 2)
+	assert_eq(stores["rifle"], 9)
 	assert_eq(survivor["missions"], 1)
 	assert_eq(survivor["kills"], 1)
 	assert_eq(survivor["xp"], 35)
@@ -102,7 +111,9 @@ func test_game_state_applies_battle_result_to_active_campaign() -> void:
 		"xcom_losses": PackedStringArray(),
 		"xcom_kills": {"xcom_1": 1},
 		"xcom_xp": {"xcom_1": 35},
-		"xcom_wounds": {"xcom_1": 3}
+		"xcom_wounds": {"xcom_1": 3},
+		"score_xcom": 10,
+		"recovered_items": {"sectoid_corpse": 1}
 	}
 	GameState.apply_battle_result(battle_result)
 	var soldier: Dictionary = GameState.campaign["bases"][0]["soldiers"][0]
@@ -112,3 +123,5 @@ func test_game_state_applies_battle_result_to_active_campaign() -> void:
 	assert_eq(soldier["rank"], "Squaddie")
 	assert_eq(soldier["status"], "wounded")
 	assert_eq(soldier["wounds_days_left"], 3)
+	assert_eq(GameState.campaign["score"]["month_xcom"], 10)
+	assert_eq(GameState.campaign["bases"][0]["stores"]["sectoid_corpse"], 1)

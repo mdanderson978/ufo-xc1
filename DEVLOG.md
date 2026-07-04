@@ -2,6 +2,30 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 campaign rewards
+
+Battle rewards now land in campaign state instead of stopping at the tactical
+result dictionary. The same `apply_battle_result()` path that updates soldiers
+now also updates monthly score and base stores.
+
+### Step 1: score application
+- `CampaignFactory.apply_battle_result()` now adds `score_xcom` to
+  `campaign.score.month_xcom`.
+- The function still works on a deep copy so callers keep immutable input
+  semantics.
+
+### Step 2: recovered item stores
+- Recovered items from `battle_result.recovered_items` now merge into the
+  selected base's stores.
+- Existing item quantities increment and newly recovered item ids are inserted.
+
+### Step 3: tests
+- Added coverage for monthly score updates, recovered new item insertion,
+  existing store accumulation, no input mutation, and the `GameState` wrapper.
+
+### Commit note
+- Intended commit boundary: `Phase 2: apply campaign rewards`.
+
 ## 2026-07-04 — Phase 2 post-mission wounds
 
 Battle results now carry enough survivor health information for the campaign
