@@ -21,7 +21,7 @@ func load_campaign(slot_name: String) -> Error:
 	var json := JSON.new()
 	if json.parse(text) != OK:
 		return ERR_PARSE_ERROR
-	GameState.from_save_dict(json.data)
+	GameState.from_save_dict(Jsonish.normalised(json.data))
 	return OK
 
 func list_saves() -> PackedStringArray:

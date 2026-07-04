@@ -1,0 +1,69 @@
+{
+	"access_lift": {
+		"name": "Access Lift",
+		"build_cost": 300000,
+		"build_days": 1,
+		"maintenance_monthly": 4000,
+		"is_lift": true,
+		"unique_per_base": true
+	},
+	"living_quarters": {
+		"name": "Living Quarters",
+		"build_cost": 400000,
+		"build_days": 16,
+		"maintenance_monthly": 10000,
+		"capacity": {"personnel": 50}
+	},
+	"laboratory": {
+		"name": "Laboratory",
+		"build_cost": 750000,
+		"build_days": 26,
+		"maintenance_monthly": 30000,
+		"capacity": {"scientists": 50}
+	},
+	"workshop": {
+		"name": "Workshop",
+		"build_cost": 800000,
+		"build_days": 32,
+		"maintenance_monthly": 35000,
+		"capacity": {"engineers": 50, "workshop_space": 50}
+	},
+	"general_stores": {
+		"name": "General Stores",
+		"build_cost": 150000,
+		"build_days": 10,
+		"maintenance_monthly": 5000,
+		"capacity": {"storage": 50}
+	},
+	"small_radar": {
+		"name": "Small Radar System",
+		"build_cost": 500000,
+		"build_days": 12,
+		"maintenance_monthly": 10000,
+		"radar": {"range_km": 1500, "detect_chance": 10}
+	},
+	"large_radar": {
+		"name": "Large Radar System",
+		"build_cost": 800000,
+		"build_days": 25,
+		"maintenance_monthly": 15000,
+		"requires_research": null,
+		"radar": {"range_km": 2250, "detect_chance": 20}
+	},
+	"hangar": {
+		"name": "Hangar",
+		"build_cost": 200000,
+		"build_days": 25,
+		"maintenance_monthly": 25000,
+		"capacity": {"craft": 1},
+		"size": 2
+	},
+	"alien_containment": {
+		"name": "Alien Containment",
+		"build_cost": 400000,
+		"build_days": 18,
+		"maintenance_monthly": 15000,
+		"requires_research": "alien_containment",
+		"capacity": {"aliens": 10}
+	}
+}

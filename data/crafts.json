@@ -1,0 +1,27 @@
+{
+	"interceptor": {
+		"name": "Interceptor",
+		"cost_buy": 600000,
+		"maintenance_monthly": 600000,
+		"speed_kmh": 2100,
+		"fuel_max": 100,
+		"fuel_per_hour": 10,
+		"damage_max": 100,
+		"weapons": 2,
+		"crew": 0,
+		"role": "interceptor",
+		"default_weapon": {"name": "Cannon", "damage": 10, "range_km": 10, "rounds": 200, "reload_hours": 2}
+	},
+	"skyranger": {
+		"name": "Skyranger",
+		"cost_buy": 500000,
+		"maintenance_monthly": 500000,
+		"speed_kmh": 760,
+		"fuel_max": 100,
+		"fuel_per_hour": 5,
+		"damage_max": 150,
+		"weapons": 0,
+		"crew": 14,
+		"role": "transport"
+	}
+}

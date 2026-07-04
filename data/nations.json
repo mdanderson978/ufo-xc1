@@ -1,0 +1,18 @@
+{
+	"usa": {"name": "United States", "funding_start": 600000, "zone": {"lon": [-125, -70], "lat": [25, 50]}},
+	"russia": {"name": "Russia", "funding_start": 230000, "zone": {"lon": [30, 180], "lat": [45, 75]}},
+	"uk": {"name": "United Kingdom", "funding_start": 240000, "zone": {"lon": [-8, 2], "lat": [50, 59]}},
+	"france": {"name": "France", "funding_start": 320000, "zone": {"lon": [-5, 8], "lat": [42, 51]}},
+	"germany": {"name": "Germany", "funding_start": 250000, "zone": {"lon": [6, 15], "lat": [47, 55]}},
+	"italy": {"name": "Italy", "funding_start": 160000, "zone": {"lon": [7, 18], "lat": [37, 47]}},
+	"spain": {"name": "Spain", "funding_start": 140000, "zone": {"lon": [-9, 3], "lat": [36, 44]}},
+	"china": {"name": "China", "funding_start": 245000, "zone": {"lon": [75, 135], "lat": [18, 53]}},
+	"japan": {"name": "Japan", "funding_start": 400000, "zone": {"lon": [129, 146], "lat": [31, 45]}},
+	"india": {"name": "India", "funding_start": 150000, "zone": {"lon": [68, 97], "lat": [8, 35]}},
+	"brazil": {"name": "Brazil", "funding_start": 300000, "zone": {"lon": [-74, -35], "lat": [-33, 5]}},
+	"australia": {"name": "Australia", "funding_start": 280000, "zone": {"lon": [113, 154], "lat": [-43, -11]}},
+	"nigeria": {"name": "Nigeria", "funding_start": 180000, "zone": {"lon": [3, 15], "lat": [4, 14]}},
+	"south_africa": {"name": "South Africa", "funding_start": 230000, "zone": {"lon": [17, 33], "lat": [-35, -22]}},
+	"egypt": {"name": "Egypt", "funding_start": 150000, "zone": {"lon": [25, 35], "lat": [22, 31]}},
+	"canada": {"name": "Canada", "funding_start": 230000, "zone": {"lon": [-140, -55], "lat": [48, 70]}}
+}

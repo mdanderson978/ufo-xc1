@@ -1,0 +1,32 @@
+{
+	"config": {
+		"cost_hire": 40000,
+		"salary_monthly": 20000,
+		"stat_ranges": {
+			"tu": [50, 60],
+			"stamina": [40, 70],
+			"health": [25, 40],
+			"bravery": [10, 60],
+			"reactions": [30, 60],
+			"firing_accuracy": [40, 70],
+			"throwing_accuracy": [50, 80],
+			"strength": [20, 40],
+			"melee_accuracy": [20, 40]
+		},
+		"stat_caps": {
+			"tu": 80, "stamina": 100, "health": 60, "bravery": 100,
+			"reactions": 100, "firing_accuracy": 120, "throwing_accuracy": 120,
+			"strength": 70, "melee_accuracy": 120
+		},
+		"portraits": [
+			"res://assets/portraits/soldier_01.webp",
+			"res://assets/portraits/soldier_02.webp",
+			"res://assets/portraits/soldier_03.webp",
+			"res://assets/portraits/soldier_04.webp",
+			"res://assets/portraits/soldier_05.webp",
+			"res://assets/portraits/soldier_06.webp"
+		]
+	},
+	"first_names": ["Alex", "Maria", "Chen", "Yuki", "Omar", "Elena", "Marcus", "Aisha", "Ivan", "Sofia", "James", "Priya", "Diego", "Astrid", "Kwame", "Hannah", "Viktor", "Leila", "Tom", "Ingrid"],
+	"last_names": ["Reyes", "Novak", "Tanaka", "Okafor", "Schmidt", "Silva", "Petrov", "Andersson", "Nakamura", "Osei", "Kowalski", "Rossi", "Zhang", "Haddad", "Jensen", "Moreau", "Singh", "Walker", "Duarte", "Kim"]
+}

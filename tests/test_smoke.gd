@@ -29,10 +29,6 @@ func test_save_load_round_trip() -> void:
 	assert_eq(SaveManager.save_campaign("gut_test_slot"), OK)
 	GameState.campaign = {}
 	assert_eq(SaveManager.load_campaign("gut_test_slot"), OK)
-	# JSON round-trip turns ints into floats; compare via JSON normal form.
-	assert_eq(JSON.stringify(GameState.to_save_dict()), JSON.stringify(_json_normalised(before)))
-
-func _json_normalised(data: Dictionary) -> Variant:
-	var json := JSON.new()
-	json.parse(JSON.stringify(data))
-	return json.data
+	# Campaign state is canonical (Jsonish.normalised) at creation and load,
+	# so the round-trip must be byte-identical.
+	assert_eq(JSON.stringify(GameState.to_save_dict()), JSON.stringify(before))

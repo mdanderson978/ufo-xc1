@@ -10,12 +10,8 @@ var campaign_active: bool = false
 ## can round-trip it through JSON losslessly.
 var campaign: Dictionary = {}
 
-func new_campaign() -> void:
-	campaign = {
-		"version": 1,
-		"funds": 5_000_000,
-		"calendar": {"year": 1999, "month": 1, "day": 1, "minute": 0},
-	}
+func new_campaign(seed_value: int = randi()) -> void:
+	campaign = Jsonish.normalised(CampaignFactory.new_campaign(DataRegistry, seed_value))
 	campaign_active = true
 	EventBus.campaign_state_changed.emit()
 

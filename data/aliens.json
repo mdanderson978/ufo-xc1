@@ -1,0 +1,59 @@
+{
+	"sectoid_soldier": {
+		"name": "Sectoid Soldier",
+		"rank": "soldier",
+		"stats": {
+			"tu": 54, "stamina": 90, "health": 30, "bravery": 80,
+			"reactions": 63, "firing_accuracy": 52, "throwing_accuracy": 58,
+			"strength": 30, "melee_accuracy": 76
+		},
+		"armor": {"front": 4, "side": 3, "rear": 2, "under": 2},
+		"loadout": {"right_hand": "plasma_pistol", "belt": ["plasma_pistol_clip"]},
+		"corpse_item": "sectoid_corpse",
+		"live_capture_research": "sectoid_soldier_interrogation",
+		"intelligence": 3,
+		"aggression": 1,
+		"vision_range": 20,
+		"model": "sectoid",
+		"portrait": "res://assets/portraits/sectoid.webp",
+		"score_kill": 10
+	},
+	"sectoid_leader": {
+		"name": "Sectoid Leader",
+		"rank": "leader",
+		"stats": {
+			"tu": 58, "stamina": 96, "health": 36, "bravery": 90,
+			"reactions": 68, "firing_accuracy": 60, "throwing_accuracy": 58,
+			"strength": 30, "melee_accuracy": 76
+		},
+		"armor": {"front": 5, "side": 4, "rear": 3, "under": 2},
+		"loadout": {"right_hand": "plasma_pistol", "belt": ["plasma_pistol_clip", "plasma_pistol_clip"]},
+		"corpse_item": "sectoid_corpse",
+		"live_capture_research": "sectoid_leader_interrogation",
+		"intelligence": 6,
+		"aggression": 1,
+		"vision_range": 20,
+		"stays_in_ufo": true,
+		"model": "sectoid",
+		"portrait": "res://assets/portraits/sectoid.webp",
+		"score_kill": 16
+	},
+	"reaper": {
+		"name": "Reaper",
+		"rank": "terrorist",
+		"stats": {
+			"tu": 62, "stamina": 90, "health": 148, "bravery": 90,
+			"reactions": 64, "firing_accuracy": 0, "throwing_accuracy": 0,
+			"strength": 90, "melee_accuracy": 72
+		},
+		"armor": {"front": 6, "side": 6, "rear": 4, "under": 4},
+		"melee_attack": {"damage": 78, "damage_type": "melee", "tu_percent": 12},
+		"corpse_item": "reaper_corpse",
+		"intelligence": 1,
+		"aggression": 2,
+		"vision_range": 20,
+		"big_unit": true,
+		"model": "reaper",
+		"score_kill": 12
+	}
+}

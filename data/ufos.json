@@ -1,0 +1,35 @@
+{
+	"small_scout": {
+		"name": "Small Scout",
+		"size": "very_small",
+		"speed_kmh": 2200,
+		"damage_max": 50,
+		"weapon": null,
+		"crew": {"sectoid_soldier": [1, 2]},
+		"score_flyover": 2,
+		"loot": {"alien_alloys": [1, 2], "elerium": [0, 1]},
+		"map_hull": "scout_hull"
+	},
+	"medium_scout": {
+		"name": "Medium Scout",
+		"size": "small",
+		"speed_kmh": 2400,
+		"damage_max": 200,
+		"weapon": {"damage": 20, "range_km": 15},
+		"crew": {"sectoid_soldier": [2, 4], "sectoid_leader": [1, 1]},
+		"score_flyover": 4,
+		"loot": {"alien_alloys": [2, 4], "elerium": [1, 3]},
+		"map_hull": "scout_hull"
+	},
+	"harvester": {
+		"name": "Harvester",
+		"size": "medium",
+		"speed_kmh": 4000,
+		"damage_max": 500,
+		"weapon": {"damage": 40, "range_km": 22},
+		"crew": {"sectoid_soldier": [3, 5], "sectoid_leader": [1, 1], "reaper": [1, 2]},
+		"score_flyover": 6,
+		"loot": {"alien_alloys": [4, 8], "elerium": [2, 5]},
+		"map_hull": "harvester_hull"
+	}
+}

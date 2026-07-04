@@ -1,0 +1,85 @@
+{
+	"laser_weapons": {
+		"name": "Laser Weapons",
+		"cost_scientist_days": 50,
+		"requires": [],
+		"description": "Fundamental research into concentrated light weaponry."
+	},
+	"laser_pistol": {
+		"name": "Laser Pistol",
+		"cost_scientist_days": 100,
+		"requires": ["laser_weapons"],
+		"unlocks_manufacture": "laser_pistol",
+		"description": "A compact sidearm requiring no ammunition."
+	},
+	"laser_rifle": {
+		"name": "Laser Rifle",
+		"cost_scientist_days": 300,
+		"requires": ["laser_pistol"],
+		"unlocks_manufacture": "laser_rifle",
+		"description": "Standard-issue beam weapon. No clips, no reloads."
+	},
+	"alien_alloys": {
+		"name": "Alien Alloys",
+		"cost_scientist_days": 400,
+		"requires": [],
+		"needs_item": "alien_alloys",
+		"description": "The remarkable materials recovered from UFO wreckage."
+	},
+	"elerium": {
+		"name": "Elerium-115",
+		"cost_scientist_days": 450,
+		"requires": [],
+		"needs_item": "elerium",
+		"description": "The element that powers alien craft. Cannot be synthesised."
+	},
+	"plasma_pistol": {
+		"name": "Plasma Pistol",
+		"cost_scientist_days": 600,
+		"requires": [],
+		"needs_item": "plasma_pistol",
+		"description": "Reverse-engineering the aliens' sidearm."
+	},
+	"sectoid_autopsy": {
+		"name": "Sectoid Autopsy",
+		"cost_scientist_days": 180,
+		"requires": [],
+		"needs_item": "sectoid_corpse",
+		"description": "Post-mortem examination of the most common alien species."
+	},
+	"reaper_autopsy": {
+		"name": "Reaper Autopsy",
+		"cost_scientist_days": 180,
+		"requires": [],
+		"needs_item": "reaper_corpse",
+		"description": "Dissection of the aliens' terror beast."
+	},
+	"alien_containment": {
+		"name": "Alien Containment",
+		"cost_scientist_days": 200,
+		"requires": ["sectoid_autopsy"],
+		"unlocks_facility": "alien_containment",
+		"description": "Life-support systems for holding live extraterrestrials."
+	},
+	"sectoid_soldier_interrogation": {
+		"name": "Sectoid Soldier",
+		"cost_scientist_days": 192,
+		"requires": ["alien_containment"],
+		"needs_live_alien": "sectoid_soldier",
+		"description": "Interrogation of a live Sectoid soldier."
+	},
+	"sectoid_leader_interrogation": {
+		"name": "Sectoid Leader",
+		"cost_scientist_days": 192,
+		"requires": ["alien_containment"],
+		"needs_live_alien": "sectoid_leader",
+		"unlocks_research": ["alien_origins"],
+		"description": "The leader caste knows why they are here."
+	},
+	"alien_origins": {
+		"name": "Alien Origins",
+		"cost_scientist_days": 300,
+		"requires": ["sectoid_leader_interrogation"],
+		"description": "The first glimpse of the truth behind the invasion. (Milestone 1 campaign capstone.)"
+	}
+}
