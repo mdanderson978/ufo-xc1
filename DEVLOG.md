@@ -2,6 +2,33 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 basic alien AI
+
+The debug Battlescape now has an opposing turn. This is the first simple AI
+pass, not the final tactical brain.
+
+### Step 1: headless AI runner
+- Added `BattleAI`, a scene-free RefCounted helper that acts through
+  `BattleState` instead of bypassing rules.
+- Aliens fire snap shots at visible XCOM units when they have line of sight.
+- If no XCOM unit is visible, aliens path a limited number of steps toward the
+  nearest living XCOM unit.
+- Added `BattleState.unit_at()` as a public occupancy query for AI/pathing.
+
+### Step 2: tests
+- Added `tests/test_battle_ai.gd`.
+- Covered visible-target shooting, unseen-target advance, and no-op behavior
+  outside the alien turn.
+
+### Step 3: debug screen wiring
+- The debug Battlescape `End Turn` button now advances to the alien side,
+  resolves `BattleAI.run_alien_turn()`, then returns control to XCOM if the
+  battle is still active.
+- The status line summarizes alien attacks, moves, and waits.
+
+### Commit note
+- Intended commit boundary: `Phase 2: add basic alien AI`.
+
 ## 2026-07-04 — Phase 2 debug Battlescape view
 
 The first playable tactical debug surface is now wired into the main menu. It

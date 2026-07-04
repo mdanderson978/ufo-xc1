@@ -4,6 +4,7 @@ extends Control
 
 const TILE_SIZE := 18
 const MAP_ORIGIN := Vector2(24, 96)
+const BattleAIScript := preload("res://src/battlescape/battle_ai.gd")
 const MOVE_DIRS: Array[Vector2i] = [
 	Vector2i(1, 0),
 	Vector2i(-1, 0),
@@ -154,11 +155,38 @@ func _on_end_turn_pressed() -> void:
 	var result := _state.end_turn()
 	if result.get("ok", false):
 		_selected_unit_id = ""
-		_set_status("Turn advanced. Active team: %s" % _state.active_team)
+		if _state.active_team == BattleUnit.TEAM_ALIEN and _state.outcome == BattleState.OUTCOME_ACTIVE:
+			var actions: Array[Dictionary] = BattleAIScript.run_alien_turn(_state)
+			if _state.outcome == BattleState.OUTCOME_ACTIVE:
+				_state.end_turn()
+			_set_status(_summarize_alien_actions(actions))
+		else:
+			_set_status("Turn advanced. Active team: %s" % _state.active_team)
 	else:
 		_set_status("End turn failed: %s" % result.get("error"))
 	_update_turn_label()
 	queue_redraw()
+
+func _summarize_alien_actions(actions: Array[Dictionary]) -> String:
+	if actions.is_empty():
+		return "Aliens hold position. Active team: %s" % _state.active_team
+	var attacks := 0
+	var moves := 0
+	var waits := 0
+	for action: Dictionary in actions:
+		match String(action.get("type", "")):
+			"attack":
+				attacks += 1
+			"move":
+				moves += 1
+			"wait":
+				waits += 1
+	return "Alien turn: %d attacks, %d moves, %d waits. Active team: %s" % [
+		attacks,
+		moves,
+		waits,
+		_state.active_team
+	]
 
 func _draw() -> void:
 	if _state == null:

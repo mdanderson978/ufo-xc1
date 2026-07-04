@@ -149,6 +149,9 @@ func visible_tile_list(team: String) -> Array[Vector2i]:
 		result.append(pos)
 	return result
 
+func unit_at(pos: Vector2i) -> BattleUnit:
+	return _unit_at(pos)
+
 func serialize() -> Dictionary:
 	var serialized_units: Array = []
 	for unit_id: String in unit_order:
