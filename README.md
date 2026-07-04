@@ -48,4 +48,4 @@ Interest and contributions are welcome — open an issue to say hi or pitch an i
 
 UFO: XC1 is an original fan reimagining. It contains **no assets, code, or data from the original game**, and is not affiliated with or endorsed by the rights holders of the X-COM franchise. All bundled assets are CC0/CC-BY (see `assets/CREDITS.md`) or original to this project.
 
-Code licensed under [MIT](LICENSE).
+Code licensed under the [GNU GPLv3](LICENSE) — UFO: XC1 is and will remain open source, and so must every fork or derivative. Bundled art/audio remain under their own open licenses (CC0/CC-BY, per `assets/CREDITS.md`).
