@@ -42,7 +42,7 @@ All rules logic (TU costs, hit chance, LOS, economy) is engine-node-free GDScrip
 
 ## Contributing
 
-Interest and contributions are welcome — open an issue to say hi or pitch an idea before sending large PRs, since core architecture is still moving fast. Good early ways to help: playtesting builds, game-balance data, CC0 asset curation, and Godot/GDScript review.
+Interest and contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup and ground rules, and [ROADMAP.md](ROADMAP.md) for where the project is headed. Good early ways to help: playtesting builds, game-balance data, CC0 asset curation, and Godot/GDScript review.
 
 ## Legal
 

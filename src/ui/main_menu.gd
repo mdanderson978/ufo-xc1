@@ -3,6 +3,19 @@ extends Control
 ## the button wiring is permanent.
 
 func _ready() -> void:
+	var background := TextureRect.new()
+	background.texture = load("res://assets/ui/title_key_art.webp")
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(background)
+
+	# Darken the left side so menu text stays readable over the art.
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.45)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(shade)
+
 	var layout := VBoxContainer.new()
 	layout.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	layout.add_theme_constant_override("separation", 12)

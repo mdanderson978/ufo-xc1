@@ -35,4 +35,7 @@ exact pixel counts don't matter, I resize on integration.
 
 | ID | Status | Notes |
 |----|--------|-------|
-| P001–P012 | waiting | queued 2026-07-04 |
+| P001–P012 | ✅ integrated | received & integrated 2026-07-04 (P004–P009 became soldier portraits 01–06). Converted to WebP; originals removed from incoming/. |
+
+Next batch (terrain decals, UFOpaedia illustrations, facility icons) will be
+queued when Phase 2/4 needs them.
