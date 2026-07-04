@@ -1,0 +1,118 @@
+extends GutTest
+## Phase 2 battle controller: mission state, turn flow, visibility, actions,
+## and win/loss outcomes.
+
+var terrain: Dictionary
+var items: Dictionary
+
+func before_each() -> void:
+	terrain = DataRegistry.get_table("terrain")
+	items = DataRegistry.get_table("items")
+
+func test_from_crash_site_places_squad_and_alien_crew() -> void:
+	var soldiers := [_soldier_record(1), _soldier_record(2), _soldier_record(3)]
+	var state := BattleState.from_crash_site(DataRegistry, "small_scout", soldiers, 77)
+	assert_eq(state.active_team, BattleUnit.TEAM_XCOM)
+	assert_eq(state.turn_number, 1)
+	assert_eq(state.living_units(BattleUnit.TEAM_XCOM).size(), soldiers.size())
+	assert_gt(state.living_units(BattleUnit.TEAM_ALIEN).size(), 0)
+	for unit: BattleUnit in state.living_units():
+		assert_true(state.map.is_walkable(unit.pos), "%s spawned on blocked tile" % unit.id)
+
+func test_begin_battle_builds_visibility_and_spotted_enemies() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	assert_true(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_true(state.spotted_enemies[BattleUnit.TEAM_XCOM].has("sectoid_1"))
+
+func test_visibility_respects_blocking_terrain() -> void:
+	var map := BattleMap.new(8, 3, terrain)
+	map.set_obstacle(Vector2i(3, 1), "hedge")
+	var state := BattleState.create(map, items, 1)
+	assert_eq(state.add_unit(BattleUnit.from_soldier(_soldier_record(1), Vector2i(1, 1))), OK)
+	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", DataRegistry.get_record("aliens", "sectoid_soldier"), Vector2i(5, 1))), OK)
+	state.begin_battle()
+	assert_false(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_false(state.spotted_enemies[BattleUnit.TEAM_XCOM].has("sectoid_1"))
+
+func test_end_turn_flips_team_and_refreshes_tu() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	var alien := state.get_unit("sectoid_1")
+	alien.tu_current = 0
+	var result := state.end_turn()
+	assert_true(result["ok"])
+	assert_eq(state.active_team, BattleUnit.TEAM_ALIEN)
+	assert_eq(alien.tu_current, int(alien.stats["tu"]))
+	result = state.end_turn()
+	assert_true(result["ok"])
+	assert_eq(state.active_team, BattleUnit.TEAM_XCOM)
+	assert_eq(state.turn_number, 2)
+
+func test_move_unit_rejects_inactive_and_occupied_tiles() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	var alien_move := state.move_unit("sectoid_1", [Vector2i(4, 1)])
+	assert_false(alien_move["ok"], "alien cannot move during XCOM turn")
+	var occupied := state.move_unit("xcom_1", [Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1)])
+	assert_false(occupied["ok"], "unit cannot move into occupied enemy tile")
+
+func test_move_unit_spends_tu_and_refreshes_visibility() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	var unit := state.get_unit("xcom_1")
+	var before := unit.tu_current
+	var result := state.move_unit("xcom_1", [Vector2i(2, 1)])
+	assert_true(result["ok"])
+	assert_eq(unit.pos, Vector2i(2, 1))
+	assert_eq(unit.tu_current, before - int(terrain["grass"]["tu_cost"]))
+	assert_true(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+
+func test_attack_unit_updates_outcome_when_last_alien_dies() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	var target := state.get_unit("sectoid_1")
+	target.health_current = 1
+	var result := {}
+	for i in range(10):
+		if state.outcome != BattleState.OUTCOME_ACTIVE:
+			break
+		state.get_unit("xcom_1").tu_current = 60
+		result = state.attack_unit("xcom_1", "sectoid_1", "aimed")
+		assert_true(result["ok"])
+	assert_eq(target.health_current, 0)
+	assert_eq(state.outcome, BattleState.OUTCOME_XCOM_WIN)
+	assert_eq(result["outcome"], BattleState.OUTCOME_XCOM_WIN)
+
+func test_alien_win_when_last_xcom_unit_is_dead() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	state.get_unit("xcom_1").health_current = 0
+	state.end_turn()
+	assert_eq(state.outcome, BattleState.OUTCOME_ALIEN_WIN)
+
+func _simple_state() -> BattleState:
+	var map := BattleMap.new(8, 3, terrain)
+	var state := BattleState.create(map, items, 4)
+	assert_eq(state.add_unit(BattleUnit.from_soldier(_soldier_record(1), Vector2i(1, 1))), OK)
+	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", DataRegistry.get_record("aliens", "sectoid_soldier"), Vector2i(5, 1))), OK)
+	return state
+
+func _soldier_record(id: int) -> Dictionary:
+	return {
+		"id": id,
+		"name": "Test Soldier %d" % id,
+		"stats": {
+			"tu": 60,
+			"stamina": 55,
+			"health": 35,
+			"bravery": 50,
+			"reactions": 50,
+			"firing_accuracy": 120,
+			"throwing_accuracy": 60,
+			"strength": 30,
+			"melee_accuracy": 30,
+			"vision_range": 20
+		},
+		"loadout": {"right_hand": "rifle"}
+	}

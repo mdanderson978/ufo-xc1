@@ -1,0 +1,77 @@
+{
+	"grass": {
+		"name": "Grass", "kind": "ground",
+		"walkable": true, "tu_cost": 4, "blocks_sight": false, "cover": 0
+	},
+	"dirt": {
+		"name": "Dirt", "kind": "ground",
+		"walkable": true, "tu_cost": 4, "blocks_sight": false, "cover": 0
+	},
+	"wheat": {
+		"name": "Wheat Crop", "kind": "ground",
+		"walkable": true, "tu_cost": 6, "blocks_sight": false, "cover": 10,
+		"conceals_kneeling": true
+	},
+	"mud": {
+		"name": "Mud", "kind": "ground",
+		"walkable": true, "tu_cost": 8, "blocks_sight": false, "cover": 0
+	},
+	"scorched": {
+		"name": "Scorched Earth", "kind": "ground",
+		"walkable": true, "tu_cost": 4, "blocks_sight": false, "cover": 0
+	},
+	"fence": {
+		"name": "Wooden Fence", "kind": "obstacle",
+		"walkable": false, "blocks_sight": false, "cover": 30,
+		"destructible": {"hp": 20, "becomes": null}
+	},
+	"hedge": {
+		"name": "Hedge", "kind": "obstacle",
+		"walkable": false, "blocks_sight": true, "cover": 35,
+		"destructible": {"hp": 30, "becomes": null}
+	},
+	"tree": {
+		"name": "Tree", "kind": "obstacle",
+		"walkable": false, "blocks_sight": true, "cover": 50,
+		"destructible": {"hp": 60, "becomes": null}
+	},
+	"hay_bale": {
+		"name": "Hay Bale", "kind": "obstacle",
+		"walkable": false, "blocks_sight": true, "cover": 40,
+		"destructible": {"hp": 25, "becomes": null}
+	},
+	"rock": {
+		"name": "Boulder", "kind": "obstacle",
+		"walkable": false, "blocks_sight": true, "cover": 60,
+		"destructible": {"hp": 120, "becomes": null}
+	},
+	"ufo_floor": {
+		"name": "UFO Floor", "kind": "ground",
+		"walkable": true, "tu_cost": 4, "blocks_sight": false, "cover": 0
+	},
+	"ufo_wall": {
+		"name": "UFO Hull", "kind": "obstacle",
+		"walkable": false, "blocks_sight": true, "cover": 100,
+		"destructible": {"hp": 200, "becomes": "ufo_breach"}
+	},
+	"ufo_breach": {
+		"name": "Breached Hull", "kind": "obstacle",
+		"walkable": false, "blocks_sight": false, "cover": 50
+	},
+	"ufo_door": {
+		"name": "UFO Door", "kind": "door",
+		"walkable": true, "tu_cost": 6, "blocks_sight": true, "cover": 0,
+		"opens": true
+	},
+	"ufo_console": {
+		"name": "Alien Console", "kind": "obstacle",
+		"walkable": false, "blocks_sight": false, "cover": 40,
+		"destructible": {"hp": 50, "becomes": null},
+		"loot_on_recover": "elerium"
+	},
+	"wreckage": {
+		"name": "Wreckage", "kind": "obstacle",
+		"walkable": false, "blocks_sight": false, "cover": 30,
+		"destructible": {"hp": 40, "becomes": null}
+	}
+}

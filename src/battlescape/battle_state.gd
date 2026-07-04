@@ -1,0 +1,227 @@
+class_name BattleState
+extends RefCounted
+## Scene-free mission controller. Owns the tactical map, units, active side,
+## visibility cache, action dispatch, and win/loss state.
+
+const OUTCOME_ACTIVE := "active"
+const OUTCOME_XCOM_WIN := "xcom_win"
+const OUTCOME_ALIEN_WIN := "alien_win"
+
+var map: BattleMap
+var items: Dictionary
+var units: Dictionary = {}
+var unit_order: PackedStringArray = PackedStringArray()
+var active_team: String = BattleUnit.TEAM_XCOM
+var turn_number: int = 1
+var seed_value: int = 0
+var rng := RandomNumberGenerator.new()
+var visible_tiles: Dictionary = {"xcom": {}, "alien": {}}
+var spotted_enemies: Dictionary = {"xcom": PackedStringArray(), "alien": PackedStringArray()}
+var outcome: String = OUTCOME_ACTIVE
+
+static func create(initial_map: BattleMap, item_table: Dictionary, seed: int = 0) -> BattleState:
+	var state := BattleState.new()
+	state.map = initial_map
+	state.items = item_table
+	state.seed_value = seed
+	state.rng.seed = seed
+	return state
+
+static func from_crash_site(registry: Object, ufo_id: String, soldiers: Array, seed: int = 0) -> BattleState:
+	var state := BattleState.create(
+		CrashSiteGenerator.generate(registry.get_table("terrain"), ufo_id, seed),
+		registry.get_table("items"),
+		seed)
+	for i in range(mini(soldiers.size(), state.map.xcom_spawns.size())):
+		state.add_unit(BattleUnit.from_soldier(soldiers[i], state.map.xcom_spawns[i]))
+
+	var ufo: Dictionary = registry.get_record("ufos", ufo_id)
+	var alien_spawn_index := 0
+	for alien_id: String in ufo.get("crew", {}):
+		var count_range: Array = ufo["crew"][alien_id]
+		var count := state.rng.randi_range(int(count_range[0]), int(count_range[1]))
+		for i in range(count):
+			if alien_spawn_index >= state.map.alien_spawns.size():
+				break
+			var unit_id := "%s_%d" % [alien_id, i + 1]
+			state.add_unit(BattleUnit.from_alien(unit_id, registry.get_record("aliens", alien_id), state.map.alien_spawns[alien_spawn_index]))
+			alien_spawn_index += 1
+
+	state.begin_battle()
+	return state
+
+func add_unit(unit: BattleUnit) -> Error:
+	if units.has(unit.id):
+		return ERR_ALREADY_EXISTS
+	if _unit_at(unit.pos) != null:
+		return ERR_BUSY
+	if not map.is_walkable(unit.pos):
+		return BattleRules.ERR_BLOCKED
+	units[unit.id] = unit
+	unit_order.append(unit.id)
+	return OK
+
+func begin_battle() -> void:
+	active_team = BattleUnit.TEAM_XCOM
+	turn_number = 1
+	outcome = OUTCOME_ACTIVE
+	for unit: BattleUnit in living_units(active_team):
+		unit.begin_turn()
+	_refresh_visibility()
+	_update_outcome()
+
+func get_unit(unit_id: String) -> BattleUnit:
+	return units.get(unit_id) as BattleUnit
+
+func living_units(team: String = "") -> Array[BattleUnit]:
+	var result: Array[BattleUnit] = []
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.is_alive() and (team == "" or unit.team == team):
+			result.append(unit)
+	return result
+
+func move_unit(unit_id: String, path: Array[Vector2i]) -> Dictionary:
+	if outcome != OUTCOME_ACTIVE:
+		return _error(ERR_UNAVAILABLE)
+	var unit := get_unit(unit_id)
+	if unit == null or not unit.is_alive():
+		return _error(ERR_DOES_NOT_EXIST)
+	if unit.team != active_team:
+		return _error(ERR_INVALID_DATA)
+
+	var start := unit.pos
+	for destination: Vector2i in path:
+		var occupant := _unit_at(destination)
+		if occupant != null and occupant != unit:
+			return _error(ERR_BUSY)
+		var result := BattleRules.move_step(map, unit, destination)
+		if result != OK:
+			return _error(result)
+	_refresh_visibility()
+	return {
+		"ok": true,
+		"unit_id": unit.id,
+		"from": [start.x, start.y],
+		"to": [unit.pos.x, unit.pos.y],
+		"tu_current": unit.tu_current,
+		"outcome": outcome
+	}
+
+func attack_unit(attacker_id: String, target_id: String, fire_mode: String) -> Dictionary:
+	if outcome != OUTCOME_ACTIVE:
+		return _error(ERR_UNAVAILABLE)
+	var attacker := get_unit(attacker_id)
+	var target := get_unit(target_id)
+	if attacker == null or target == null or not attacker.is_alive() or not target.is_alive():
+		return _error(ERR_DOES_NOT_EXIST)
+	if attacker.team != active_team or attacker.team == target.team:
+		return _error(ERR_INVALID_DATA)
+
+	var result := BattleRules.attack(map, attacker, target, items, fire_mode, rng)
+	if not result.get("ok", false):
+		return result
+	_refresh_visibility()
+	_update_outcome()
+	result["outcome"] = outcome
+	return result
+
+func end_turn() -> Dictionary:
+	_update_outcome()
+	if outcome != OUTCOME_ACTIVE:
+		return {"ok": true, "active_team": active_team, "turn_number": turn_number, "outcome": outcome}
+	active_team = _opposing_team(active_team)
+	if active_team == BattleUnit.TEAM_XCOM:
+		turn_number += 1
+	for unit: BattleUnit in living_units(active_team):
+		unit.begin_turn()
+	_refresh_visibility()
+	return {"ok": true, "active_team": active_team, "turn_number": turn_number, "outcome": outcome}
+
+func is_visible_to(team: String, pos: Vector2i) -> bool:
+	var team_tiles: Dictionary = visible_tiles.get(team, {})
+	return team_tiles.has(pos)
+
+func visible_tile_list(team: String) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var team_tiles: Dictionary = visible_tiles.get(team, {})
+	for pos: Vector2i in team_tiles:
+		result.append(pos)
+	return result
+
+func serialize() -> Dictionary:
+	var serialized_units: Array = []
+	for unit_id: String in unit_order:
+		serialized_units.append((units[unit_id] as BattleUnit).serialize())
+	return {
+		"map": map.serialize(),
+		"units": serialized_units,
+		"active_team": active_team,
+		"turn_number": turn_number,
+		"seed": seed_value,
+		"outcome": outcome,
+		"visible_tiles": {
+			BattleUnit.TEAM_XCOM: _serialize_positions(visible_tiles[BattleUnit.TEAM_XCOM].keys()),
+			BattleUnit.TEAM_ALIEN: _serialize_positions(visible_tiles[BattleUnit.TEAM_ALIEN].keys())
+		},
+		"spotted_enemies": {
+			BattleUnit.TEAM_XCOM: Array(spotted_enemies[BattleUnit.TEAM_XCOM]),
+			BattleUnit.TEAM_ALIEN: Array(spotted_enemies[BattleUnit.TEAM_ALIEN])
+		}
+	}
+
+func _refresh_visibility() -> void:
+	visible_tiles[BattleUnit.TEAM_XCOM] = _visible_tiles_for(BattleUnit.TEAM_XCOM)
+	visible_tiles[BattleUnit.TEAM_ALIEN] = _visible_tiles_for(BattleUnit.TEAM_ALIEN)
+	spotted_enemies[BattleUnit.TEAM_XCOM] = _spotted_enemies_for(BattleUnit.TEAM_XCOM)
+	spotted_enemies[BattleUnit.TEAM_ALIEN] = _spotted_enemies_for(BattleUnit.TEAM_ALIEN)
+
+func _visible_tiles_for(team: String) -> Dictionary:
+	var visible: Dictionary = {}
+	for unit: BattleUnit in living_units(team):
+		var vision_range := int(unit.stats.get("vision_range", 20))
+		var min_x := maxi(0, unit.pos.x - vision_range)
+		var max_x := mini(map.width - 1, unit.pos.x + vision_range)
+		var min_y := maxi(0, unit.pos.y - vision_range)
+		var max_y := mini(map.height - 1, unit.pos.y + vision_range)
+		for y in range(min_y, max_y + 1):
+			for x in range(min_x, max_x + 1):
+				var pos := Vector2i(x, y)
+				if BattleRules.can_see(map, unit.pos, pos, vision_range):
+					visible[pos] = true
+	return visible
+
+func _spotted_enemies_for(team: String) -> PackedStringArray:
+	var spotted := PackedStringArray()
+	var enemy_team := _opposing_team(team)
+	for unit: BattleUnit in living_units(enemy_team):
+		if is_visible_to(team, unit.pos):
+			spotted.append(unit.id)
+	return spotted
+
+func _update_outcome() -> void:
+	if living_units(BattleUnit.TEAM_XCOM).is_empty():
+		outcome = OUTCOME_ALIEN_WIN
+	elif living_units(BattleUnit.TEAM_ALIEN).is_empty():
+		outcome = OUTCOME_XCOM_WIN
+	else:
+		outcome = OUTCOME_ACTIVE
+
+func _unit_at(pos: Vector2i) -> BattleUnit:
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.is_alive() and unit.pos == pos:
+			return unit
+	return null
+
+func _opposing_team(team: String) -> String:
+	return BattleUnit.TEAM_ALIEN if team == BattleUnit.TEAM_XCOM else BattleUnit.TEAM_XCOM
+
+func _serialize_positions(positions: Array) -> Array:
+	var result := []
+	for pos: Vector2i in positions:
+		result.append([pos.x, pos.y])
+	return result
+
+func _error(error_code: Error) -> Dictionary:
+	return {"ok": false, "error": error_code}

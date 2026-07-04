@@ -33,7 +33,7 @@ All rules logic (TU costs, hit chance, LOS, economy) is engine-node-free GDScrip
 
 1. Download [Godot 4.7 stable](https://godotengine.org/download) (standard build).
 2. Clone this repo, open `project.godot` with Godot.
-3. Run the main scene (F5). The `tests/` suite runs via GUT headless — see `tools/run_tests.md` (coming with Phase 0 completion).
+3. Run the main scene (F5). The `tests/` suite runs via GUT headless — see `tools/run_tests.md`.
 
 ## Roadmap
 

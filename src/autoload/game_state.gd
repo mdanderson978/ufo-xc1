@@ -1,7 +1,7 @@
 extends Node
 ## The single campaign-state object. Everything a save file contains lives
-## here as plain serializable data. Phase 1 replaces these stubs with the
-## full campaign model (funds, bases, soldiers, research, calendar).
+## here as plain serializable data: funds, bases, soldiers, research,
+## calendar, UFOs, and other campaign systems as they land.
 
 ## True when a campaign is loaded/underway.
 var campaign_active: bool = false

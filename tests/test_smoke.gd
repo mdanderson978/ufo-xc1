@@ -17,6 +17,17 @@ func test_all_registered_screens_instantiate() -> void:
 		assert_not_null(node, "screen '%s' failed to instantiate" % screen_id)
 		node.free()
 
+func test_all_registered_screens_enter_tree() -> void:
+	var main_script: GDScript = load("res://src/main.gd")
+	for screen_id: String in main_script.SCREENS:
+		var scene: PackedScene = load(main_script.SCREENS[screen_id])
+		var node: Node = scene.instantiate()
+		add_child(node)
+		await get_tree().process_frame
+		assert_true(node.is_inside_tree(), "screen '%s' failed to enter tree" % screen_id)
+		node.queue_free()
+		await get_tree().process_frame
+
 func test_new_campaign_sets_state() -> void:
 	GameState.new_campaign()
 	assert_true(GameState.campaign_active)

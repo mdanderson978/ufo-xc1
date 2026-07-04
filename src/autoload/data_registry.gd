@@ -1,8 +1,7 @@
 extends Node
 ## Loads and validates all static game data from res://data/*.json.
 ## Content is data-driven: adding an item/alien/facility means adding JSON,
-## not code. Phase 1 fills in the schemas; for now this loads any JSON
-## files present and exposes them by table name.
+## not code. Tables are exposed by file stem and validated for references.
 
 const DATA_DIR := "res://data"
 
@@ -47,8 +46,9 @@ func validate() -> PackedStringArray:
 	var research: Dictionary = get_table("research")
 	var aliens: Dictionary = get_table("aliens")
 	var facilities: Dictionary = get_table("facilities")
+	var terrain: Dictionary = get_table("terrain")
 
-	for table_name: String in ["items", "aliens", "facilities", "research", "crafts", "ufos", "nations", "soldiers"]:
+	for table_name: String in ["items", "aliens", "facilities", "research", "crafts", "ufos", "nations", "soldiers", "terrain"]:
 		if not tables.has(table_name):
 			problems.append("missing table '%s'" % table_name)
 
@@ -110,6 +110,17 @@ func validate() -> PackedStringArray:
 	for portrait: String in soldier_config.get("portraits", []):
 		if not ResourceLoader.exists(portrait):
 			problems.append("soldiers/config: portrait '%s' not found" % portrait)
+
+	for id: String in terrain:
+		var tile: Dictionary = terrain[id]
+		if not tile.has("kind"):
+			problems.append("terrain/%s: missing kind" % id)
+		var becomes: Variant = tile.get("destructible", {}).get("becomes")
+		if becomes != null and not terrain.has(becomes):
+			problems.append("terrain/%s: destructible becomes '%s' not found" % [id, becomes])
+		var recovered_item: Variant = tile.get("loot_on_recover")
+		if recovered_item != null and not items.has(recovered_item):
+			problems.append("terrain/%s: loot_on_recover item '%s' not found" % [id, recovered_item])
 
 	return problems
 

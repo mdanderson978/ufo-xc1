@@ -9,6 +9,7 @@ func test_all_tables_present_and_valid() -> void:
 	assert_eq(DataRegistry.get_table("nations").size(), 16)
 	assert_eq(DataRegistry.get_table("aliens").size(), 3)
 	assert_gte(DataRegistry.get_table("research").size(), 12)
+	assert_gt(DataRegistry.get_table("terrain").size(), 10)
 
 func test_new_campaign_is_deterministic() -> void:
 	var a := CampaignFactory.new_campaign(DataRegistry, 1234)

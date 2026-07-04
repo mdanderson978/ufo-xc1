@@ -58,8 +58,7 @@ func _on_continue() -> void:
 	SaveManager.load_campaign(slots[slots.size() - 1])
 
 func _on_skirmish() -> void:
-	# Battlescape debug launcher lands with Phase 2.
-	print("Skirmish not yet implemented")
+	EventBus.screen_change_requested.emit("battlescape", {"seed": 1001, "ufo": "small_scout"})
 
 func _on_quit() -> void:
 	get_tree().quit()

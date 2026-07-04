@@ -4,10 +4,10 @@ extends Node
 
 const SCREENS := {
 	"main_menu": "res://src/ui/main_menu.tscn",
+	"battlescape": "res://src/battlescape/battlescape.tscn",
 	# Registered as the phases land:
 	# "geoscape": "res://src/geoscape/geoscape.tscn",
 	# "basescape": "res://src/basescape/basescape.tscn",
-	# "battlescape": "res://src/battlescape/battlescape.tscn",
 	# "debrief": "res://src/ui/debrief.tscn",
 }
 
