@@ -55,7 +55,8 @@ func test_apply_battle_result_updates_soldier_records() -> void:
 		"xcom_survivors": PackedStringArray(["xcom_1"]),
 		"xcom_losses": PackedStringArray(["xcom_2"]),
 		"xcom_kills": {"xcom_1": 1, "xcom_2": 2},
-		"xcom_xp": {"xcom_1": 35, "xcom_2": 50}
+		"xcom_xp": {"xcom_1": 35, "xcom_2": 50},
+		"xcom_wounds": {"xcom_1": 9, "xcom_2": 12}
 	}
 	var updated := CampaignFactory.apply_battle_result(campaign, battle_result)
 	var original_soldier: Dictionary = campaign["bases"][0]["soldiers"][0]
@@ -68,7 +69,8 @@ func test_apply_battle_result_updates_soldier_records() -> void:
 	assert_eq(survivor["kills"], 1)
 	assert_eq(survivor["xp"], 35)
 	assert_eq(survivor["rank"], "Squaddie")
-	assert_eq(survivor["status"], "active")
+	assert_eq(survivor["status"], "wounded")
+	assert_eq(survivor["wounds_days_left"], 9)
 	assert_eq(casualty["missions"], 1)
 	assert_eq(casualty["kills"], 2)
 	assert_eq(casualty["xp"], 50)
@@ -77,13 +79,30 @@ func test_apply_battle_result_updates_soldier_records() -> void:
 	assert_eq(casualty["wounds_days_left"], 0)
 	assert_eq(uninvolved["missions"], 0)
 
+func test_apply_battle_result_clears_wounds_for_healthy_survivors() -> void:
+	var campaign := CampaignFactory.new_campaign(DataRegistry, 7)
+	campaign["bases"][0]["soldiers"][0]["status"] = "wounded"
+	campaign["bases"][0]["soldiers"][0]["wounds_days_left"] = 4
+	var battle_result := {
+		"xcom_survivors": PackedStringArray(["xcom_1"]),
+		"xcom_losses": PackedStringArray(),
+		"xcom_kills": {},
+		"xcom_xp": {"xcom_1": 10},
+		"xcom_wounds": {}
+	}
+	var updated := CampaignFactory.apply_battle_result(campaign, battle_result)
+	var soldier: Dictionary = updated["bases"][0]["soldiers"][0]
+	assert_eq(soldier["status"], "active")
+	assert_eq(soldier["wounds_days_left"], 0)
+
 func test_game_state_applies_battle_result_to_active_campaign() -> void:
 	GameState.new_campaign(9)
 	var battle_result := {
 		"xcom_survivors": PackedStringArray(["xcom_1"]),
 		"xcom_losses": PackedStringArray(),
 		"xcom_kills": {"xcom_1": 1},
-		"xcom_xp": {"xcom_1": 35}
+		"xcom_xp": {"xcom_1": 35},
+		"xcom_wounds": {"xcom_1": 3}
 	}
 	GameState.apply_battle_result(battle_result)
 	var soldier: Dictionary = GameState.campaign["bases"][0]["soldiers"][0]
@@ -91,3 +110,5 @@ func test_game_state_applies_battle_result_to_active_campaign() -> void:
 	assert_eq(soldier["kills"], 1)
 	assert_eq(soldier["xp"], 35)
 	assert_eq(soldier["rank"], "Squaddie")
+	assert_eq(soldier["status"], "wounded")
+	assert_eq(soldier["wounds_days_left"], 3)

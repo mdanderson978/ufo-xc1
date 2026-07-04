@@ -2,6 +2,32 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 post-mission wounds
+
+Battle results now carry enough survivor health information for the campaign
+layer to mark soldiers wounded after a mission. This closes another piece of
+the tactical-to-campaign handoff without adding Geoscape time passage yet.
+
+### Step 1: wound result output
+- `BattleState.battle_result()` now includes `xcom_wounds`.
+- Surviving XCOM units with missing health receive deterministic wound days
+  based on missing health.
+- Dead units remain losses and do not receive wound entries.
+
+### Step 2: campaign application
+- `CampaignFactory.apply_battle_result()` now applies wound days to surviving
+  soldiers.
+- Wounded survivors are marked `status = "wounded"` and healthy survivors are
+  restored to `status = "active"` with zero wound days.
+- Dead soldiers still take precedence over any wound data.
+
+### Step 3: tests
+- Added coverage for wound result output, wounded survivor campaign state,
+  healthy survivor wound clearing, KIA precedence, and the `GameState` wrapper.
+
+### Commit note
+- Intended commit boundary: `Phase 2: apply post-mission wounds`.
+
 ## 2026-07-04 — Phase 2 soldier XP and rank application
 
 Mission results can now feed soldier progression back into campaign save data.

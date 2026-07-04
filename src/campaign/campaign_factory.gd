@@ -108,6 +108,7 @@ static func apply_battle_result(campaign: Dictionary, battle_result: Dictionary,
 	var losses := _string_set(battle_result.get("xcom_losses", []))
 	var mission_kills: Dictionary = battle_result.get("xcom_kills", {})
 	var mission_xp: Dictionary = battle_result.get("xcom_xp", {})
+	var mission_wounds: Dictionary = battle_result.get("xcom_wounds", {})
 
 	var participants := survivors.duplicate()
 	for unit_id: String in losses:
@@ -126,6 +127,10 @@ static func apply_battle_result(campaign: Dictionary, battle_result: Dictionary,
 		if losses.has(unit_id):
 			soldier["status"] = "dead"
 			soldier["wounds_days_left"] = 0
+		else:
+			var wound_days := int(mission_wounds.get(unit_id, 0))
+			soldier["wounds_days_left"] = wound_days
+			soldier["status"] = "wounded" if wound_days > 0 else "active"
 	return updated
 
 static func _string_set(values: Variant) -> Dictionary:

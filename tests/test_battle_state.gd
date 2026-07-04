@@ -151,6 +151,15 @@ func test_soldier_career_kills_do_not_seed_mission_kills() -> void:
 	assert_false(battle_result["xcom_kills"].has("xcom_1"))
 	assert_eq(battle_result["xcom_xp"]["xcom_1"], BattleState.XP_MISSION_SURVIVED)
 
+func test_battle_result_reports_survivor_wound_days() -> void:
+	var state := _simple_state()
+	state.begin_battle()
+	state.get_unit("xcom_1").health_current = 23
+	var battle_result := state.battle_result()
+	assert_eq(battle_result["xcom_wounds"]["xcom_1"], 12 * BattleState.WOUND_DAYS_PER_DAMAGE)
+	assert_true(battle_result["xcom_survivors"].has("xcom_1"))
+	assert_false(battle_result["xcom_losses"].has("xcom_1"))
+
 func test_death_reduces_living_allies_morale() -> void:
 	var state := _morale_state(11)
 	state.begin_battle()
@@ -198,6 +207,7 @@ func test_battle_result_recovers_ufo_loot_and_alien_corpses() -> void:
 	assert_eq(battle_result["score_xcom"], 10)
 	assert_eq(battle_result["xcom_kills"]["xcom_1"], 1)
 	assert_eq(battle_result["xcom_xp"]["xcom_1"], BattleState.XP_MISSION_SURVIVED + BattleState.XP_PER_KILL)
+	assert_false(battle_result["xcom_wounds"].has("xcom_1"))
 	assert_eq(battle_result["recovered_items"]["alien_alloys"], 2)
 	assert_eq(battle_result["recovered_items"]["sectoid_corpse"], 1)
 	assert_true(battle_result.has("morale_events"))

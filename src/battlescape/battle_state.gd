@@ -8,6 +8,7 @@ const OUTCOME_XCOM_WIN := "xcom_win"
 const OUTCOME_ALIEN_WIN := "alien_win"
 const XP_MISSION_SURVIVED := 10
 const XP_PER_KILL := 25
+const WOUND_DAYS_PER_DAMAGE := 1
 
 var map: BattleMap
 var items: Dictionary
@@ -216,6 +217,7 @@ func battle_result() -> Dictionary:
 		"xcom_kills": _kill_counts_for(BattleUnit.TEAM_XCOM),
 		"alien_kills": _kill_counts_for(BattleUnit.TEAM_ALIEN),
 		"xcom_xp": _xp_awards_for_xcom(),
+		"xcom_wounds": _wound_days_for_xcom(),
 		"score_xcom": _score_for_killed_aliens(),
 		"recovered_items": recovered_items,
 		"morale_events": morale_events.duplicate(true)
@@ -422,6 +424,18 @@ func _xp_awards_for_xcom() -> Dictionary:
 		if xp > 0:
 			awards[unit.id] = xp
 	return awards
+
+func _wound_days_for_xcom() -> Dictionary:
+	var wounds := {}
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.team != BattleUnit.TEAM_XCOM or not unit.is_alive():
+			continue
+		var max_health := int(unit.stats.get("health", unit.health_current))
+		var missing_health := maxi(0, max_health - unit.health_current)
+		if missing_health > 0:
+			wounds[unit.id] = missing_health * WOUND_DAYS_PER_DAMAGE
+	return wounds
 
 func _score_for_killed_aliens() -> int:
 	var score := 0
