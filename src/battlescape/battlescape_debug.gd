@@ -253,13 +253,17 @@ func _draw_map() -> void:
 	for y in range(_state.map.height):
 		for x in range(_state.map.width):
 			var pos := Vector2i(x, y)
-			var tile: Dictionary = _state.map.tile(pos)
 			var rect := Rect2(MAP_ORIGIN + Vector2(x * TILE_SIZE, y * TILE_SIZE), Vector2(TILE_SIZE, TILE_SIZE))
+			if not _state.has_seen(BattleUnit.TEAM_XCOM, pos):
+				draw_rect(rect, Color(0.015, 0.018, 0.02))
+				draw_rect(rect, Color(0.08, 0.1, 0.12), false, 1.0)
+				continue
+			var tile: Dictionary = _state.map.tile(pos)
 			draw_rect(rect, _tile_color(tile))
 			if tile["obstacle"] != null:
 				draw_rect(rect.grow(-4), _obstacle_color(tile["obstacle"]))
 			if not _state.is_visible_to(BattleUnit.TEAM_XCOM, pos):
-				draw_rect(rect, Color(0, 0, 0, 0.55))
+				draw_rect(rect, Color(0, 0, 0, 0.5))
 			draw_rect(rect, Color(0, 0, 0, 0.28), false, 1.0)
 
 func _draw_units() -> void:

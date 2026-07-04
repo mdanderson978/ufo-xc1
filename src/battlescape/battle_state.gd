@@ -16,6 +16,7 @@ var turn_number: int = 1
 var seed_value: int = 0
 var rng := RandomNumberGenerator.new()
 var visible_tiles: Dictionary = {"xcom": {}, "alien": {}}
+var discovered_tiles: Dictionary = {"xcom": {}, "alien": {}}
 var spotted_enemies: Dictionary = {"xcom": PackedStringArray(), "alien": PackedStringArray()}
 var outcome: String = OUTCOME_ACTIVE
 var reaction_fire_enabled: bool = true
@@ -80,6 +81,9 @@ func begin_battle() -> void:
 	active_team = BattleUnit.TEAM_XCOM
 	turn_number = 1
 	outcome = OUTCOME_ACTIVE
+	visible_tiles = _empty_team_tile_cache()
+	discovered_tiles = _empty_team_tile_cache()
+	spotted_enemies = {BattleUnit.TEAM_XCOM: PackedStringArray(), BattleUnit.TEAM_ALIEN: PackedStringArray()}
 	morale_events.clear()
 	for unit: BattleUnit in living_units(active_team):
 		unit.begin_turn()
@@ -169,9 +173,20 @@ func is_visible_to(team: String, pos: Vector2i) -> bool:
 	var team_tiles: Dictionary = visible_tiles.get(team, {})
 	return team_tiles.has(pos)
 
+func has_seen(team: String, pos: Vector2i) -> bool:
+	var team_tiles: Dictionary = discovered_tiles.get(team, {})
+	return team_tiles.has(pos)
+
 func visible_tile_list(team: String) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var team_tiles: Dictionary = visible_tiles.get(team, {})
+	for pos: Vector2i in team_tiles:
+		result.append(pos)
+	return result
+
+func discovered_tile_list(team: String) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var team_tiles: Dictionary = discovered_tiles.get(team, {})
 	for pos: Vector2i in team_tiles:
 		result.append(pos)
 	return result
@@ -221,6 +236,10 @@ func serialize() -> Dictionary:
 			BattleUnit.TEAM_XCOM: _serialize_positions(visible_tiles[BattleUnit.TEAM_XCOM].keys()),
 			BattleUnit.TEAM_ALIEN: _serialize_positions(visible_tiles[BattleUnit.TEAM_ALIEN].keys())
 		},
+		"discovered_tiles": {
+			BattleUnit.TEAM_XCOM: _serialize_positions(discovered_tiles[BattleUnit.TEAM_XCOM].keys()),
+			BattleUnit.TEAM_ALIEN: _serialize_positions(discovered_tiles[BattleUnit.TEAM_ALIEN].keys())
+		},
 		"spotted_enemies": {
 			BattleUnit.TEAM_XCOM: Array(spotted_enemies[BattleUnit.TEAM_XCOM]),
 			BattleUnit.TEAM_ALIEN: Array(spotted_enemies[BattleUnit.TEAM_ALIEN])
@@ -230,8 +249,17 @@ func serialize() -> Dictionary:
 func _refresh_visibility() -> void:
 	visible_tiles[BattleUnit.TEAM_XCOM] = _visible_tiles_for(BattleUnit.TEAM_XCOM)
 	visible_tiles[BattleUnit.TEAM_ALIEN] = _visible_tiles_for(BattleUnit.TEAM_ALIEN)
+	_remember_visible_tiles(BattleUnit.TEAM_XCOM)
+	_remember_visible_tiles(BattleUnit.TEAM_ALIEN)
 	spotted_enemies[BattleUnit.TEAM_XCOM] = _spotted_enemies_for(BattleUnit.TEAM_XCOM)
 	spotted_enemies[BattleUnit.TEAM_ALIEN] = _spotted_enemies_for(BattleUnit.TEAM_ALIEN)
+
+func _remember_visible_tiles(team: String) -> void:
+	var memory: Dictionary = discovered_tiles.get(team, {})
+	var current: Dictionary = visible_tiles.get(team, {})
+	for pos: Vector2i in current:
+		memory[pos] = true
+	discovered_tiles[team] = memory
 
 func _visible_tiles_for(team: String) -> Dictionary:
 	var visible: Dictionary = {}
@@ -396,6 +424,9 @@ func _unit_at(pos: Vector2i) -> BattleUnit:
 
 func _opposing_team(team: String) -> String:
 	return BattleUnit.TEAM_ALIEN if team == BattleUnit.TEAM_XCOM else BattleUnit.TEAM_XCOM
+
+func _empty_team_tile_cache() -> Dictionary:
+	return {BattleUnit.TEAM_XCOM: {}, BattleUnit.TEAM_ALIEN: {}}
 
 func _serialize_positions(positions: Array) -> Array:
 	var result := []

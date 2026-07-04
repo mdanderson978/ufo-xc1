@@ -2,6 +2,36 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 fog-of-war memory
+
+The tactical model now distinguishes current line of sight from tiles a side has
+already discovered. This gives the debug Battlescape the classic three-state
+fog model: unseen, remembered, and currently visible.
+
+### Step 1: discovered tile cache
+- `BattleState` now tracks `discovered_tiles` for XCOM and aliens alongside
+  current `visible_tiles`.
+- Battle start clears current and discovered visibility, then seeds discovery
+  from the initial visibility refresh.
+
+### Step 2: visibility refresh integration
+- Every visibility refresh now merges current visible tiles into discovered
+  memory for each team.
+- Added `has_seen()` and `discovered_tile_list()` for presentation and future AI
+  consumers.
+
+### Step 3: serialization and debug rendering
+- Battle serialization now includes discovered tiles.
+- The debug Battlescape renders never-seen tiles as dark unknown space, while
+  previously seen but currently hidden tiles keep terrain silhouettes under fog.
+
+### Step 4: tests
+- Added deterministic coverage for never-seen blocked LOS, discovery after a
+  sightline opens, and remembered tiles after LOS is blocked again.
+
+### Commit note
+- Intended commit boundary: `Phase 2: add fog of war memory`.
+
 ## 2026-07-04 — Phase 2 morale and panic
 
 The tactical model now has its first morale consequences. Deaths can shake

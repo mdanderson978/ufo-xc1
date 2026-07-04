@@ -23,6 +23,7 @@ func test_begin_battle_builds_visibility_and_spotted_enemies() -> void:
 	var state := _simple_state()
 	state.begin_battle()
 	assert_true(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_true(state.has_seen(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
 	assert_true(state.spotted_enemies[BattleUnit.TEAM_XCOM].has("sectoid_1"))
 
 func test_visibility_respects_blocking_terrain() -> void:
@@ -33,7 +34,33 @@ func test_visibility_respects_blocking_terrain() -> void:
 	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", DataRegistry.get_record("aliens", "sectoid_soldier"), Vector2i(5, 1))), OK)
 	state.begin_battle()
 	assert_false(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_false(state.has_seen(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
 	assert_false(state.spotted_enemies[BattleUnit.TEAM_XCOM].has("sectoid_1"))
+
+func test_discovered_tiles_remember_previous_visibility() -> void:
+	var map := BattleMap.new(8, 3, terrain)
+	map.set_obstacle(Vector2i(3, 1), "hedge")
+	var state := BattleState.create(map, items, 2)
+	state.reaction_fire_enabled = false
+	assert_eq(state.add_unit(BattleUnit.from_soldier(_soldier_record(1), Vector2i(1, 1))), OK)
+	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", DataRegistry.get_record("aliens", "sectoid_soldier"), Vector2i(5, 1))), OK)
+	state.begin_battle()
+	assert_false(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_false(state.has_seen(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+
+	assert_true(state.map.damage_obstacle(Vector2i(3, 1), 99))
+	var scout_result := state.move_unit("xcom_1", [Vector2i(2, 1)])
+	assert_true(scout_result["ok"])
+	assert_true(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_true(state.has_seen(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+
+	state.map.set_obstacle(Vector2i(3, 1), "hedge")
+	var fallback_result := state.move_unit("xcom_1", [Vector2i(1, 1)])
+	assert_true(fallback_result["ok"])
+	assert_false(state.is_visible_to(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_true(state.has_seen(BattleUnit.TEAM_XCOM, Vector2i(5, 1)))
+	assert_true(state.discovered_tile_list(BattleUnit.TEAM_XCOM).has(Vector2i(5, 1)))
+	assert_true(state.serialize()["discovered_tiles"][BattleUnit.TEAM_XCOM].has([5, 1]))
 
 func test_end_turn_flips_team_and_refreshes_tu() -> void:
 	var state := _simple_state()
