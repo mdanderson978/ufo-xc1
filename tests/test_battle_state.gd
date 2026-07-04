@@ -139,6 +139,18 @@ func test_attack_unit_updates_outcome_when_last_alien_dies() -> void:
 	assert_eq(result["outcome"], BattleState.OUTCOME_XCOM_WIN)
 	assert_eq(state.get_unit("xcom_1").kills_current, 1)
 
+func test_soldier_career_kills_do_not_seed_mission_kills() -> void:
+	var map := BattleMap.new(8, 3, terrain)
+	var state := BattleState.create(map, items, 8)
+	var soldier := _soldier_record(1)
+	soldier["kills"] = 4
+	assert_eq(state.add_unit(BattleUnit.from_soldier(soldier, Vector2i(1, 1))), OK)
+	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", DataRegistry.get_record("aliens", "sectoid_soldier"), Vector2i(5, 1))), OK)
+	state.begin_battle()
+	var battle_result := state.battle_result()
+	assert_false(battle_result["xcom_kills"].has("xcom_1"))
+	assert_eq(battle_result["xcom_xp"]["xcom_1"], BattleState.XP_MISSION_SURVIVED)
+
 func test_death_reduces_living_allies_morale() -> void:
 	var state := _morale_state(11)
 	state.begin_battle()
@@ -185,6 +197,7 @@ func test_battle_result_recovers_ufo_loot_and_alien_corpses() -> void:
 	assert_eq(battle_result["ufo_id"], "small_scout")
 	assert_eq(battle_result["score_xcom"], 10)
 	assert_eq(battle_result["xcom_kills"]["xcom_1"], 1)
+	assert_eq(battle_result["xcom_xp"]["xcom_1"], BattleState.XP_MISSION_SURVIVED + BattleState.XP_PER_KILL)
 	assert_eq(battle_result["recovered_items"]["alien_alloys"], 2)
 	assert_eq(battle_result["recovered_items"]["sectoid_corpse"], 1)
 	assert_true(battle_result.has("morale_events"))

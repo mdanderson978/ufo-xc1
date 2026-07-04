@@ -6,6 +6,8 @@ extends RefCounted
 const OUTCOME_ACTIVE := "active"
 const OUTCOME_XCOM_WIN := "xcom_win"
 const OUTCOME_ALIEN_WIN := "alien_win"
+const XP_MISSION_SURVIVED := 10
+const XP_PER_KILL := 25
 
 var map: BattleMap
 var items: Dictionary
@@ -213,6 +215,7 @@ func battle_result() -> Dictionary:
 		"aliens_survived": _unit_ids_for(BattleUnit.TEAM_ALIEN, true),
 		"xcom_kills": _kill_counts_for(BattleUnit.TEAM_XCOM),
 		"alien_kills": _kill_counts_for(BattleUnit.TEAM_ALIEN),
+		"xcom_xp": _xp_awards_for_xcom(),
 		"score_xcom": _score_for_killed_aliens(),
 		"recovered_items": recovered_items,
 		"morale_events": morale_events.duplicate(true)
@@ -406,6 +409,19 @@ func _kill_counts_for(team: String) -> Dictionary:
 		if unit.team == team and unit.kills_current > 0:
 			counts[unit.id] = unit.kills_current
 	return counts
+
+func _xp_awards_for_xcom() -> Dictionary:
+	var awards := {}
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.team != BattleUnit.TEAM_XCOM:
+			continue
+		var xp := unit.kills_current * XP_PER_KILL
+		if unit.is_alive():
+			xp += XP_MISSION_SURVIVED
+		if xp > 0:
+			awards[unit.id] = xp
+	return awards
 
 func _score_for_killed_aliens() -> int:
 	var score := 0

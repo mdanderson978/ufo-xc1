@@ -2,6 +2,36 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 soldier XP and rank application
+
+Mission results can now feed soldier progression back into campaign save data.
+This keeps the loop plain-data and deterministic: Battlescape reports mission
+kills and XP awards, then the campaign layer applies them to base soldiers.
+
+### Step 1: mission-only kill accounting
+- `BattleUnit.from_soldier()` now starts `kills_current` at zero instead of
+  copying career kills into mission state.
+- This prevents veteran soldiers from double-counting prior kills when a battle
+  result is applied.
+
+### Step 2: battle XP awards
+- `BattleState.battle_result()` now includes `xcom_xp`.
+- XCOM soldiers earn survival XP and per-kill XP from the mission result.
+
+### Step 3: campaign application
+- New campaign soldiers now carry `xp` and `rank` fields.
+- `CampaignFactory.apply_battle_result()` updates participating soldiers'
+  missions, career kills, XP, rank, and KIA status without mutating the input
+  campaign dictionary.
+- `GameState.apply_battle_result()` exposes the same flow for future screens.
+
+### Step 4: tests
+- Added coverage for mission-only kill accounting, XP result output, campaign
+  soldier updates, KIA handling, rank promotion, and the `GameState` wrapper.
+
+### Commit note
+- Intended commit boundary: `Phase 2: apply soldier XP and ranks`.
+
 ## 2026-07-04 — Phase 2 fog-of-war memory
 
 The tactical model now distinguishes current line of sight from tiles a side has

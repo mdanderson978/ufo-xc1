@@ -30,6 +30,8 @@ func test_starting_base_shape() -> void:
 			"unknown facility %s" % facility["type"])
 	var ranges: Dictionary = DataRegistry.get_table("soldiers")["config"]["stat_ranges"]
 	for soldier: Dictionary in base["soldiers"]:
+		assert_eq(soldier["xp"], 0)
+		assert_eq(soldier["rank"], "Rookie")
 		for stat: String in ranges:
 			var value: int = soldier["stats"][stat]
 			assert_between(value, int(ranges[stat][0]), int(ranges[stat][1]),
@@ -46,3 +48,46 @@ func test_campaign_save_load_round_trip() -> void:
 	assert_eq(SaveManager.load_campaign("gut_campaign_slot"), OK)
 	# Everything in the campaign dict is JSON-native, so this must be lossless.
 	assert_eq(JSON.stringify(GameState.to_save_dict()), before)
+
+func test_apply_battle_result_updates_soldier_records() -> void:
+	var campaign := CampaignFactory.new_campaign(DataRegistry, 7)
+	var battle_result := {
+		"xcom_survivors": PackedStringArray(["xcom_1"]),
+		"xcom_losses": PackedStringArray(["xcom_2"]),
+		"xcom_kills": {"xcom_1": 1, "xcom_2": 2},
+		"xcom_xp": {"xcom_1": 35, "xcom_2": 50}
+	}
+	var updated := CampaignFactory.apply_battle_result(campaign, battle_result)
+	var original_soldier: Dictionary = campaign["bases"][0]["soldiers"][0]
+	var survivor: Dictionary = updated["bases"][0]["soldiers"][0]
+	var casualty: Dictionary = updated["bases"][0]["soldiers"][1]
+	var uninvolved: Dictionary = updated["bases"][0]["soldiers"][2]
+
+	assert_eq(original_soldier["missions"], 0, "campaign input should not be mutated")
+	assert_eq(survivor["missions"], 1)
+	assert_eq(survivor["kills"], 1)
+	assert_eq(survivor["xp"], 35)
+	assert_eq(survivor["rank"], "Squaddie")
+	assert_eq(survivor["status"], "active")
+	assert_eq(casualty["missions"], 1)
+	assert_eq(casualty["kills"], 2)
+	assert_eq(casualty["xp"], 50)
+	assert_eq(casualty["rank"], "Squaddie")
+	assert_eq(casualty["status"], "dead")
+	assert_eq(casualty["wounds_days_left"], 0)
+	assert_eq(uninvolved["missions"], 0)
+
+func test_game_state_applies_battle_result_to_active_campaign() -> void:
+	GameState.new_campaign(9)
+	var battle_result := {
+		"xcom_survivors": PackedStringArray(["xcom_1"]),
+		"xcom_losses": PackedStringArray(),
+		"xcom_kills": {"xcom_1": 1},
+		"xcom_xp": {"xcom_1": 35}
+	}
+	GameState.apply_battle_result(battle_result)
+	var soldier: Dictionary = GameState.campaign["bases"][0]["soldiers"][0]
+	assert_eq(soldier["missions"], 1)
+	assert_eq(soldier["kills"], 1)
+	assert_eq(soldier["xp"], 35)
+	assert_eq(soldier["rank"], "Squaddie")

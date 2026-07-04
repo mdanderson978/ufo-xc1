@@ -8,6 +8,13 @@ const START_SOLDIERS := 8
 const START_SCIENTISTS := 10
 const START_ENGINEERS := 10
 const BASE_GRID := 6
+const RANKS: Array[Dictionary] = [
+	{"name": "Rookie", "xp": 0},
+	{"name": "Squaddie", "xp": 30},
+	{"name": "Sergeant", "xp": 90},
+	{"name": "Captain", "xp": 180},
+	{"name": "Commander", "xp": 320},
+]
 
 ## registry: DataRegistry-like (needs get_table()). seed_value drives all rolls.
 static func new_campaign(registry: Object, seed_value: int = 0) -> Dictionary:
@@ -84,8 +91,55 @@ static func generate_soldier(registry: Object, rng: RandomNumberGenerator, id: i
 		"portrait": portraits[rng.randi() % portraits.size()],
 		"appearance_seed": rng.randi(), # drives the Blender character factory model
 		"stats": stats,
-		"missions": 0, "kills": 0,
+		"missions": 0, "kills": 0, "xp": 0, "rank": "Rookie",
 		"wounds_days_left": 0,
 		"status": "active", # active | wounded | dead
 		"loadout": {},
 	}
+
+static func apply_battle_result(campaign: Dictionary, battle_result: Dictionary, base_index: int = 0) -> Dictionary:
+	var updated := campaign.duplicate(true)
+	var bases: Array = updated.get("bases", [])
+	if base_index < 0 or base_index >= bases.size():
+		return updated
+
+	var base: Dictionary = bases[base_index]
+	var survivors := _string_set(battle_result.get("xcom_survivors", []))
+	var losses := _string_set(battle_result.get("xcom_losses", []))
+	var mission_kills: Dictionary = battle_result.get("xcom_kills", {})
+	var mission_xp: Dictionary = battle_result.get("xcom_xp", {})
+
+	var participants := survivors.duplicate()
+	for unit_id: String in losses:
+		participants[unit_id] = true
+
+	for soldier: Dictionary in base.get("soldiers", []):
+		var unit_id := _xcom_unit_id_for_soldier(soldier)
+		if not participants.has(unit_id):
+			continue
+		var kills_earned := int(mission_kills.get(unit_id, 0))
+		var xp_earned := int(mission_xp.get(unit_id, 0))
+		soldier["missions"] = int(soldier.get("missions", 0)) + 1
+		soldier["kills"] = int(soldier.get("kills", 0)) + kills_earned
+		soldier["xp"] = int(soldier.get("xp", 0)) + xp_earned
+		soldier["rank"] = _rank_for_xp(int(soldier["xp"]))
+		if losses.has(unit_id):
+			soldier["status"] = "dead"
+			soldier["wounds_days_left"] = 0
+	return updated
+
+static func _string_set(values: Variant) -> Dictionary:
+	var result := {}
+	for value: Variant in values:
+		result[String(value)] = true
+	return result
+
+static func _xcom_unit_id_for_soldier(soldier: Dictionary) -> String:
+	return "xcom_%s" % soldier.get("id", 0)
+
+static func _rank_for_xp(xp: int) -> String:
+	var rank := "Rookie"
+	for rank_def: Dictionary in RANKS:
+		if xp >= int(rank_def["xp"]):
+			rank = rank_def["name"]
+	return rank

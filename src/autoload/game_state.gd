@@ -22,3 +22,9 @@ func from_save_dict(data: Dictionary) -> void:
 	campaign = data.duplicate(true)
 	campaign_active = true
 	EventBus.campaign_state_changed.emit()
+
+func apply_battle_result(battle_result: Dictionary, base_index: int = 0) -> void:
+	if not campaign_active:
+		return
+	campaign = Jsonish.normalised(CampaignFactory.apply_battle_result(campaign, battle_result, base_index))
+	EventBus.campaign_state_changed.emit()

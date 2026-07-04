@@ -32,7 +32,7 @@ static func from_soldier(soldier: Dictionary, spawn: Vector2i) -> BattleUnit:
 	unit.loadout = soldier.get("loadout", {}).duplicate(true)
 	unit.tu_current = int(unit.stats.get("tu", 0))
 	unit.health_current = int(unit.stats.get("health", 1))
-	unit.kills_current = int(soldier.get("kills", 0))
+	unit.kills_current = 0
 	return unit
 
 static func from_alien(alien_id: String, alien: Dictionary, spawn: Vector2i) -> BattleUnit:
