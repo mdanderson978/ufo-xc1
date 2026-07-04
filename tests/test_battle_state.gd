@@ -112,6 +112,33 @@ func test_attack_unit_updates_outcome_when_last_alien_dies() -> void:
 	assert_eq(result["outcome"], BattleState.OUTCOME_XCOM_WIN)
 	assert_eq(state.get_unit("xcom_1").kills_current, 1)
 
+func test_death_reduces_living_allies_morale() -> void:
+	var state := _morale_state(11)
+	state.begin_battle()
+	state.end_turn()
+	var ally := state.get_unit("xcom_2")
+	var before := ally.morale_current
+	var result := state.attack_unit("sectoid_1", "xcom_1", "snap")
+	assert_true(result["ok"])
+	assert_eq(state.get_unit("xcom_1").health_current, 0)
+	assert_lt(ally.morale_current, before)
+	assert_gt(result["morale_events"].size(), 0)
+	assert_eq(result["morale_events"][0]["type"], "morale_loss")
+
+func test_low_morale_unit_can_panic_on_turn_start() -> void:
+	var state := _morale_state(1)
+	state.begin_battle()
+	state.get_unit("xcom_2").morale_current = 0
+	state.get_unit("xcom_2").stats["bravery"] = -100
+	state.end_turn()
+	var result := state.end_turn()
+	assert_true(result["ok"])
+	assert_eq(state.active_team, BattleUnit.TEAM_XCOM)
+	assert_gt(result["morale_events"].size(), 0)
+	assert_eq(result["morale_events"][0]["type"], "panic")
+	assert_true(state.get_unit("xcom_2").panicked_this_turn)
+	assert_eq(state.get_unit("xcom_2").tu_current, 0)
+
 func test_battle_result_recovers_ufo_loot_and_alien_corpses() -> void:
 	var state := _simple_state()
 	state.ufo_id = "small_scout"
@@ -133,6 +160,7 @@ func test_battle_result_recovers_ufo_loot_and_alien_corpses() -> void:
 	assert_eq(battle_result["xcom_kills"]["xcom_1"], 1)
 	assert_eq(battle_result["recovered_items"]["alien_alloys"], 2)
 	assert_eq(battle_result["recovered_items"]["sectoid_corpse"], 1)
+	assert_true(battle_result.has("morale_events"))
 
 func test_alien_win_when_last_xcom_unit_is_dead() -> void:
 	var state := _simple_state()
@@ -181,6 +209,32 @@ func _reaction_state(xcom_health: int, seed: int) -> BattleState:
 	alien_stats["firing_accuracy"] = 200
 	alien_data["stats"] = alien_stats
 	alien_data["loadout"] = {"right_hand": "reaction_test_gun"}
+	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", alien_data, Vector2i(5, 1))), OK)
+	return state
+
+func _morale_state(seed: int) -> BattleState:
+	var morale_items := items.duplicate(true)
+	morale_items["morale_test_gun"] = {
+		"name": "Morale Test Gun",
+		"category": "weapon",
+		"damage": 99,
+		"accuracy": {"snap": 200},
+		"tu_percent": {"snap": 1}
+	}
+	var map := BattleMap.new(8, 3, terrain)
+	var state := BattleState.create(map, morale_items, seed)
+	var soldier_1 := _soldier_record(1)
+	soldier_1["stats"]["health"] = 1
+	var soldier_2 := _soldier_record(2)
+	soldier_2["stats"]["bravery"] = 0
+	assert_eq(state.add_unit(BattleUnit.from_soldier(soldier_1, Vector2i(1, 1))), OK)
+	assert_eq(state.add_unit(BattleUnit.from_soldier(soldier_2, Vector2i(1, 2))), OK)
+
+	var alien_data := DataRegistry.get_record("aliens", "sectoid_soldier").duplicate(true)
+	var alien_stats: Dictionary = alien_data["stats"].duplicate(true)
+	alien_stats["firing_accuracy"] = 200
+	alien_data["stats"] = alien_stats
+	alien_data["loadout"] = {"right_hand": "morale_test_gun"}
 	assert_eq(state.add_unit(BattleUnit.from_alien("sectoid_1", alien_data, Vector2i(5, 1))), OK)
 	return state
 

@@ -21,6 +21,7 @@ var outcome: String = OUTCOME_ACTIVE
 var reaction_fire_enabled: bool = true
 var ufo_id: String = ""
 var mission_recovery_loot: Dictionary = {}
+var morale_events: Array[Dictionary] = []
 
 static func create(initial_map: BattleMap, item_table: Dictionary, seed: int = 0) -> BattleState:
 	var state := BattleState.new()
@@ -79,6 +80,7 @@ func begin_battle() -> void:
 	active_team = BattleUnit.TEAM_XCOM
 	turn_number = 1
 	outcome = OUTCOME_ACTIVE
+	morale_events.clear()
 	for unit: BattleUnit in living_units(active_team):
 		unit.begin_turn()
 	_refresh_visibility()
@@ -126,6 +128,7 @@ func move_unit(unit_id: String, path: Array[Vector2i]) -> Dictionary:
 		"to": [unit.pos.x, unit.pos.y],
 		"tu_current": unit.tu_current,
 		"reactions": reactions,
+		"morale_events": morale_events.duplicate(true),
 		"outcome": outcome
 	}
 
@@ -146,6 +149,7 @@ func attack_unit(attacker_id: String, target_id: String, fire_mode: String) -> D
 	_refresh_visibility()
 	_update_outcome()
 	result["outcome"] = outcome
+	result["morale_events"] = morale_events.duplicate(true)
 	return result
 
 func end_turn() -> Dictionary:
@@ -157,8 +161,9 @@ func end_turn() -> Dictionary:
 		turn_number += 1
 	for unit: BattleUnit in living_units(active_team):
 		unit.begin_turn()
+	var panic_events := _resolve_panic_for_active_team()
 	_refresh_visibility()
-	return {"ok": true, "active_team": active_team, "turn_number": turn_number, "outcome": outcome}
+	return {"ok": true, "active_team": active_team, "turn_number": turn_number, "outcome": outcome, "morale_events": panic_events}
 
 func is_visible_to(team: String, pos: Vector2i) -> bool:
 	var team_tiles: Dictionary = visible_tiles.get(team, {})
@@ -194,7 +199,8 @@ func battle_result() -> Dictionary:
 		"xcom_kills": _kill_counts_for(BattleUnit.TEAM_XCOM),
 		"alien_kills": _kill_counts_for(BattleUnit.TEAM_ALIEN),
 		"score_xcom": _score_for_killed_aliens(),
-		"recovered_items": recovered_items
+		"recovered_items": recovered_items,
+		"morale_events": morale_events.duplicate(true)
 	}
 
 func serialize() -> Dictionary:
@@ -210,6 +216,7 @@ func serialize() -> Dictionary:
 		"ufo_id": ufo_id,
 		"mission_recovery_loot": mission_recovery_loot.duplicate(true),
 		"outcome": outcome,
+		"morale_events": morale_events.duplicate(true),
 		"visible_tiles": {
 			BattleUnit.TEAM_XCOM: _serialize_positions(visible_tiles[BattleUnit.TEAM_XCOM].keys()),
 			BattleUnit.TEAM_ALIEN: _serialize_positions(visible_tiles[BattleUnit.TEAM_ALIEN].keys())
@@ -315,6 +322,46 @@ func _reaction_chance(reactor: BattleUnit, mover: BattleUnit) -> int:
 func _record_kill(attacker: BattleUnit, target: BattleUnit, attack_result: Dictionary) -> void:
 	if attack_result.get("ok", false) and attack_result.get("target_killed", false):
 		attacker.kills_current += 1
+		_apply_morale_loss_for_death(target)
+
+func _apply_morale_loss_for_death(dead_unit: BattleUnit) -> void:
+	for ally: BattleUnit in living_units(dead_unit.team):
+		var bravery := int(ally.stats.get("bravery", 50))
+		var loss := clampi(35 - int(round(float(bravery) / 4.0)), 5, 35)
+		var before := ally.morale_current
+		ally.morale_current = clampi(ally.morale_current - loss, 0, 100)
+		morale_events.append({
+			"type": "morale_loss",
+			"unit_id": ally.id,
+			"team": ally.team,
+			"source": dead_unit.id,
+			"before": before,
+			"after": ally.morale_current,
+			"amount": loss
+		})
+
+func _resolve_panic_for_active_team() -> Array[Dictionary]:
+	var events: Array[Dictionary] = []
+	for unit: BattleUnit in living_units(active_team):
+		if unit.morale_current >= 30:
+			continue
+		var bravery := int(unit.stats.get("bravery", 50))
+		var chance := clampi(45 - unit.morale_current + int(round(float(50 - bravery) / 2.0)), 5, 100)
+		var roll := rng.randi_range(1, 100)
+		if roll > chance:
+			continue
+		unit.panicked_this_turn = true
+		unit.tu_current = 0
+		var event := {
+			"type": "panic",
+			"unit_id": unit.id,
+			"team": unit.team,
+			"roll": roll,
+			"chance": chance
+		}
+		events.append(event)
+		morale_events.append(event)
+	return events
 
 func _unit_ids_for(team: String, alive: bool) -> PackedStringArray:
 	var ids := PackedStringArray()

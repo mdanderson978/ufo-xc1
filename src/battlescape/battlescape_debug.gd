@@ -127,7 +127,7 @@ func _handle_tile_click(tile_pos: Vector2i) -> void:
 			selected.name,
 			selected.pos,
 			selected.tu_current,
-			_summarize_reactions(result.get("reactions", []))
+			_summarize_reactions(result.get("reactions", [])) + _summarize_morale(result.get("morale_events", []))
 		])
 		if _state.outcome != BattleState.OUTCOME_ACTIVE:
 			_set_status(_battle_result_summary())
@@ -154,6 +154,7 @@ func _attack_selected(target: BattleUnit) -> void:
 				int(result["damage"]),
 				result["outcome"]
 			])
+			_set_status(_status_label.text + _summarize_morale(result.get("morale_events", [])))
 		else:
 			_set_status(_battle_result_summary())
 	else:
@@ -169,9 +170,9 @@ func _on_end_turn_pressed() -> void:
 			var actions: Array[Dictionary] = BattleAIScript.run_alien_turn(_state)
 			if _state.outcome == BattleState.OUTCOME_ACTIVE:
 				_state.end_turn()
-			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else _summarize_alien_actions(actions))
+			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else _summarize_alien_actions(actions) + _summarize_morale(result.get("morale_events", [])))
 		else:
-			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else "Turn advanced. Active team: %s" % _state.active_team)
+			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else "Turn advanced. Active team: %s%s" % [_state.active_team, _summarize_morale(result.get("morale_events", []))])
 	else:
 		_set_status("End turn failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -210,6 +211,21 @@ func _summarize_reactions(reactions: Array) -> String:
 		if reaction.get("hit", false):
 			hits += 1
 	return " | Reaction fire: %d shots, %d hits" % [fired, hits]
+
+func _summarize_morale(events: Array) -> String:
+	if events.is_empty():
+		return ""
+	var losses := 0
+	var panics := 0
+	for event: Dictionary in events:
+		match String(event.get("type", "")):
+			"morale_loss":
+				losses += 1
+			"panic":
+				panics += 1
+	if losses == 0 and panics == 0:
+		return ""
+	return " | Morale: %d losses, %d panic" % [losses, panics]
 
 func _battle_result_summary() -> String:
 	var result := _state.battle_result()

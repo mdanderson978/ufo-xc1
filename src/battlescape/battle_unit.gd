@@ -19,6 +19,7 @@ var morale_current: int = 100
 var kills_current: int = 0
 var corpse_item: String = ""
 var score_kill: int = 0
+var panicked_this_turn: bool = false
 
 static func from_soldier(soldier: Dictionary, spawn: Vector2i) -> BattleUnit:
 	var unit := BattleUnit.new()
@@ -55,6 +56,7 @@ func is_alive() -> bool:
 func begin_turn() -> void:
 	if is_alive():
 		tu_current = int(stats.get("tu", 0))
+		panicked_this_turn = false
 
 func primary_weapon_id() -> String:
 	return loadout.get("right_hand", "")
@@ -76,5 +78,6 @@ func serialize() -> Dictionary:
 		"morale_current": morale_current,
 		"kills_current": kills_current,
 		"corpse_item": corpse_item,
-		"score_kill": score_kill
+		"score_kill": score_kill,
+		"panicked_this_turn": panicked_this_turn
 	}

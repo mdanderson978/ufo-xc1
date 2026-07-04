@@ -11,7 +11,7 @@ The whole campaign loop, real but content-light: one biome, 3 alien types,
 |-------|-------|--------|
 | 0 | Toolchain, project skeleton, character factory (MPFB2 + CMU mocap → GLB), CI-able headless tests | ✅ done |
 | 1 | Data layer: items, aliens, facilities, research tree, crafts, UFOs, nations as JSON; campaign state model + save/load | ✅ done |
-| 2 | **Battlescape**: TU combat, LOS/fog, reaction fire, alien AI, morale, mocap-animated units, **possession mode** (first-person TU-metered control), mission end/loot/XP | 🔨 in progress — map model, crash-site generator, unit state, TU movement, LOS, reaction fire, first attack resolver, battle state/turn controller, debug 2D Battlescape view, basic alien AI, mission result/loot recovery done |
+| 2 | **Battlescape**: TU combat, LOS/fog, reaction fire, alien AI, morale, mocap-animated units, **possession mode** (first-person TU-metered control), mission end/loot/XP | 🔨 in progress — map model, crash-site generator, unit state, TU movement, LOS, reaction fire, first attack resolver, battle state/turn controller, debug 2D Battlescape view, basic alien AI, morale/panic, mission result/loot recovery done |
 | 3 | **Geoscape**: 3D globe, time compression, UFO detection, interception, crash sites, monthly funding council | ⬜ |
 | 4 | **Basescape**: facility grid, personnel, research allocation, manufacturing, market, soldier equip | ⬜ |
 | 5 | Integration: full loop closure, save anywhere, menus/options, Windows export | ⬜ |

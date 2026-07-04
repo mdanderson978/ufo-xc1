@@ -2,6 +2,37 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 morale and panic
+
+The tactical model now has its first morale consequences. Deaths can shake
+surviving allies, and badly shaken units can panic at the start of their turn.
+
+### Step 1: unit morale state
+- `BattleUnit` now tracks whether it panicked this turn.
+- Turn start clears the panic flag before any new panic checks run.
+
+### Step 2: morale loss on death
+- When an attack or reaction fire kills a unit, living allies on that unit's
+  team lose morale.
+- Morale loss scales with bravery and is recorded as structured morale events.
+
+### Step 3: panic checks
+- At turn start, living units under 30 morale roll against a bravery-adjusted
+  panic chance.
+- Panicked units lose all TU for that turn and emit a structured panic event.
+
+### Step 4: result/debug plumbing
+- Movement, attack, end-turn, battle serialization, and battle results now
+  expose morale events.
+- The debug Battlescape status line summarizes morale losses and panic events.
+
+### Step 5: tests
+- Added deterministic coverage for allied morale loss after a death and panic
+  at turn start.
+
+### Commit note
+- Intended commit boundary: `Phase 2: add morale and panic`.
+
 ## 2026-07-04 — Phase 2 mission result and recovery
 
 Battles now produce a structured result that the campaign layer can consume
