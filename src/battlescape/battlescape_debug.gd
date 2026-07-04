@@ -77,11 +77,15 @@ func _start_debug_battle() -> void:
 	if not GameState.campaign_active or not GameState.campaign.has("bases") or (GameState.campaign["bases"] as Array).is_empty():
 		GameState.new_campaign(_seed)
 	var base: Dictionary = GameState.campaign["bases"][0]
-	var soldiers: Array = []
-	for i in range(mini(4, base["soldiers"].size())):
-		var soldier: Dictionary = base["soldiers"][i].duplicate(true)
-		soldier["loadout"] = {"right_hand": "rifle"}
-		soldiers.append(soldier)
+	var soldiers := _deployable_soldiers(base, 4)
+	if soldiers.is_empty():
+		_state = null
+		_selected_unit_id = ""
+		_battle_result_applied = false
+		_set_status("No active soldiers available for deployment.")
+		_update_turn_label()
+		queue_redraw()
+		return
 	_state = BattleState.from_crash_site(DataRegistry, _ufo_id, soldiers, _seed)
 	_selected_unit_id = ""
 	_battle_result_applied = false
@@ -89,7 +93,24 @@ func _start_debug_battle() -> void:
 	_update_turn_label()
 	queue_redraw()
 
+func _deployable_soldiers(base: Dictionary, max_count: int) -> Array:
+	var soldiers: Array = []
+	for soldier_data: Dictionary in base.get("soldiers", []):
+		if soldiers.size() >= max_count:
+			break
+		if not _is_deployable_soldier(soldier_data):
+			continue
+		var soldier := soldier_data.duplicate(true)
+		soldier["loadout"] = {"right_hand": "rifle"}
+		soldiers.append(soldier)
+	return soldiers
+
+func _is_deployable_soldier(soldier: Dictionary) -> bool:
+	return soldier.get("status", "active") == "active" and int(soldier.get("wounds_days_left", 0)) <= 0
+
 func _gui_input(event: InputEvent) -> void:
+	if _state == null:
+		return
 	if not event is InputEventMouseButton:
 		return
 	var mouse_event := event as InputEventMouseButton
@@ -323,6 +344,8 @@ func _obstacle_color(obstacle_id: String) -> Color:
 			return Color(0.24, 0.24, 0.24)
 
 func _screen_to_tile(screen_pos: Vector2) -> Vector2i:
+	if _state == null:
+		return Vector2i(-1, -1)
 	var local := screen_pos - MAP_ORIGIN
 	if local.x < 0 or local.y < 0:
 		return Vector2i(-1, -1)

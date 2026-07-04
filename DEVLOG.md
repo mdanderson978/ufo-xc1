@@ -2,6 +2,31 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 active-soldier deployment gating
+
+The debug Battlescape now respects campaign soldier availability when launching
+a mission. Since debug battles can now mark soldiers wounded or dead, repeat
+missions should not redeploy unavailable personnel.
+
+### Step 1: deployable soldier filter
+- Debug battles now draw their squad from active campaign soldiers only.
+- Soldiers marked `dead`, `wounded`, or carrying positive wound days are skipped.
+- The debug loadout assignment still happens on duplicated soldier records, so
+  campaign soldier data is not mutated by mission setup.
+
+### Step 2: empty-squad handling
+- If no active soldiers are available, the debug view does not create a battle
+  state.
+- Input handlers now guard against the no-battle state and the status line
+  explains that no active soldiers are available.
+
+### Step 3: tests
+- Added scene-level smoke coverage for skipping unavailable soldiers and for
+  the no-deployable-soldiers state.
+
+### Commit note
+- Intended commit boundary: `Phase 2: gate debug deployments by soldier status`.
+
 ## 2026-07-04 — Phase 2 debug battle campaign handoff
 
 The debug Battlescape now closes the tactical-to-campaign loop in the running

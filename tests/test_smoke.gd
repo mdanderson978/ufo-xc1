@@ -73,3 +73,44 @@ func test_debug_battlescape_applies_finished_battle_once() -> void:
 	await get_tree().process_frame
 	if EventBus.battle_finished.is_connected(handler):
 		EventBus.battle_finished.disconnect(handler)
+
+func test_debug_battlescape_deploys_only_active_soldiers() -> void:
+	GameState.new_campaign(1002)
+	var base: Dictionary = GameState.campaign["bases"][0]
+	base["soldiers"][0]["status"] = "dead"
+	base["soldiers"][1]["status"] = "wounded"
+	base["soldiers"][1]["wounds_days_left"] = 5
+	base["soldiers"][2]["status"] = "active"
+	base["soldiers"][2]["wounds_days_left"] = 3
+
+	var scene: PackedScene = load("res://src/battlescape/battlescape.tscn")
+	var node: Control = scene.instantiate()
+	add_child(node)
+	await get_tree().process_frame
+
+	assert_not_null(node._state)
+	assert_null(node._state.get_unit("xcom_1"))
+	assert_null(node._state.get_unit("xcom_2"))
+	assert_null(node._state.get_unit("xcom_3"))
+	assert_not_null(node._state.get_unit("xcom_4"))
+	assert_eq(node._state.living_units(BattleUnit.TEAM_XCOM).size(), 4)
+
+	node.queue_free()
+	await get_tree().process_frame
+
+func test_debug_battlescape_handles_no_deployable_soldiers() -> void:
+	GameState.new_campaign(1003)
+	for soldier: Dictionary in GameState.campaign["bases"][0]["soldiers"]:
+		soldier["status"] = "wounded"
+		soldier["wounds_days_left"] = 5
+
+	var scene: PackedScene = load("res://src/battlescape/battlescape.tscn")
+	var node: Control = scene.instantiate()
+	add_child(node)
+	await get_tree().process_frame
+
+	assert_null(node._state)
+	assert_eq(node._status_label.text, "No active soldiers available for deployment.")
+
+	node.queue_free()
+	await get_tree().process_frame
