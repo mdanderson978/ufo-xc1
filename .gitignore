@@ -1,0 +1,24 @@
+# Engine & toolchain binaries (fetched by tools/fetch_toolchain, see README)
+tools/godot/
+tools/blender/
+
+# Large third-party asset sources (fetched by tools/pipeline scripts)
+assets/third_party/
+
+# Godot generated files
+.godot/
+*.translation
+export_presets.cfg.secret
+
+# Blender temp
+*.blend1
+*.blend2
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Build output
+build/
+*.exe.tmp

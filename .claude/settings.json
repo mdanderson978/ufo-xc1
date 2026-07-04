@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://api.github.com/repos/godotengine/godot/releases/latest\")",
+      "Bash(curl -sL -o godot.zip \"https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_win64.exe.zip\")",
+      "Bash(unzip -o -q godot.zip -d godot)",
+      "Bash(rm godot.zip)",
+      "Bash(curl -s \"https://download.blender.org/release/\")",
+      "Bash(curl -s \"https://api.github.com/repos/makehumancommunity/mpfb2/releases/latest\")",
+      "Bash(./tools/godot/Godot_v4.7-stable_win64.exe --version --headless)"
+    ]
+  }
+}
