@@ -129,6 +129,8 @@ func _handle_tile_click(tile_pos: Vector2i) -> void:
 			selected.tu_current,
 			_summarize_reactions(result.get("reactions", []))
 		])
+		if _state.outcome != BattleState.OUTCOME_ACTIVE:
+			_set_status(_battle_result_summary())
 	else:
 		_set_status("Move failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -144,13 +146,16 @@ func _attack_selected(target: BattleUnit) -> void:
 	var result := _state.attack_unit(selected.id, target.id, "snap")
 	if result.get("ok", false):
 		var hit_text := "hit" if result["hit"] else "missed"
-		_set_status("%s fired at %s: %s for %d damage. Outcome: %s" % [
-			selected.name,
-			target.name,
-			hit_text,
-			int(result["damage"]),
-			result["outcome"]
-		])
+		if _state.outcome == BattleState.OUTCOME_ACTIVE:
+			_set_status("%s fired at %s: %s for %d damage. Outcome: %s" % [
+				selected.name,
+				target.name,
+				hit_text,
+				int(result["damage"]),
+				result["outcome"]
+			])
+		else:
+			_set_status(_battle_result_summary())
 	else:
 		_set_status("Attack failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -164,9 +169,9 @@ func _on_end_turn_pressed() -> void:
 			var actions: Array[Dictionary] = BattleAIScript.run_alien_turn(_state)
 			if _state.outcome == BattleState.OUTCOME_ACTIVE:
 				_state.end_turn()
-			_set_status(_summarize_alien_actions(actions))
+			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else _summarize_alien_actions(actions))
 		else:
-			_set_status("Turn advanced. Active team: %s" % _state.active_team)
+			_set_status(_battle_result_summary() if _state.outcome != BattleState.OUTCOME_ACTIVE else "Turn advanced. Active team: %s" % _state.active_team)
 	else:
 		_set_status("End turn failed: %s" % result.get("error"))
 	_update_turn_label()
@@ -205,6 +210,21 @@ func _summarize_reactions(reactions: Array) -> String:
 		if reaction.get("hit", false):
 			hits += 1
 	return " | Reaction fire: %d shots, %d hits" % [fired, hits]
+
+func _battle_result_summary() -> String:
+	var result := _state.battle_result()
+	var recovered := result["recovered_items"] as Dictionary
+	var recovered_parts: Array[String] = []
+	for item_id: String in recovered:
+		recovered_parts.append("%s x%d" % [item_id, int(recovered[item_id])])
+	var recovered_text := "none" if recovered_parts.is_empty() else ", ".join(recovered_parts)
+	return "Battle %s | Score %d | XCOM losses %d | Aliens killed %d | Recovered: %s" % [
+		result["outcome"],
+		int(result["score_xcom"]),
+		(result["xcom_losses"] as PackedStringArray).size(),
+		(result["aliens_killed"] as PackedStringArray).size(),
+		recovered_text
+	]
 
 func _draw() -> void:
 	if _state == null:

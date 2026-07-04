@@ -16,6 +16,9 @@ var loadout: Dictionary
 var tu_current: int
 var health_current: int
 var morale_current: int = 100
+var kills_current: int = 0
+var corpse_item: String = ""
+var score_kill: int = 0
 
 static func from_soldier(soldier: Dictionary, spawn: Vector2i) -> BattleUnit:
 	var unit := BattleUnit.new()
@@ -28,6 +31,7 @@ static func from_soldier(soldier: Dictionary, spawn: Vector2i) -> BattleUnit:
 	unit.loadout = soldier.get("loadout", {}).duplicate(true)
 	unit.tu_current = int(unit.stats.get("tu", 0))
 	unit.health_current = int(unit.stats.get("health", 1))
+	unit.kills_current = int(soldier.get("kills", 0))
 	return unit
 
 static func from_alien(alien_id: String, alien: Dictionary, spawn: Vector2i) -> BattleUnit:
@@ -41,6 +45,8 @@ static func from_alien(alien_id: String, alien: Dictionary, spawn: Vector2i) -> 
 	unit.loadout = alien.get("loadout", {}).duplicate(true)
 	unit.tu_current = int(unit.stats.get("tu", 0))
 	unit.health_current = int(unit.stats.get("health", 1))
+	unit.corpse_item = alien.get("corpse_item", "")
+	unit.score_kill = int(alien.get("score_kill", 0))
 	return unit
 
 func is_alive() -> bool:
@@ -67,5 +73,8 @@ func serialize() -> Dictionary:
 		"loadout": loadout.duplicate(true),
 		"tu_current": tu_current,
 		"health_current": health_current,
-		"morale_current": morale_current
+		"morale_current": morale_current,
+		"kills_current": kills_current,
+		"corpse_item": corpse_item,
+		"score_kill": score_kill
 	}

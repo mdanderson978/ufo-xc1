@@ -19,6 +19,8 @@ var visible_tiles: Dictionary = {"xcom": {}, "alien": {}}
 var spotted_enemies: Dictionary = {"xcom": PackedStringArray(), "alien": PackedStringArray()}
 var outcome: String = OUTCOME_ACTIVE
 var reaction_fire_enabled: bool = true
+var ufo_id: String = ""
+var mission_recovery_loot: Dictionary = {}
 
 static func create(initial_map: BattleMap, item_table: Dictionary, seed: int = 0) -> BattleState:
 	var state := BattleState.new()
@@ -33,10 +35,12 @@ static func from_crash_site(registry: Object, ufo_id: String, soldiers: Array, s
 		CrashSiteGenerator.generate(registry.get_table("terrain"), ufo_id, seed),
 		registry.get_table("items"),
 		seed)
+	state.ufo_id = ufo_id
 	for i in range(mini(soldiers.size(), state.map.xcom_spawns.size())):
 		state.add_unit(BattleUnit.from_soldier(soldiers[i], state.map.xcom_spawns[i]))
 
 	var ufo: Dictionary = registry.get_record("ufos", ufo_id)
+	state.mission_recovery_loot = _roll_recovery_loot(ufo.get("loot", {}), state.rng)
 	var alien_spawn_index := 0
 	for alien_id: String in ufo.get("crew", {}):
 		var count_range: Array = ufo["crew"][alien_id]
@@ -50,6 +54,15 @@ static func from_crash_site(registry: Object, ufo_id: String, soldiers: Array, s
 
 	state.begin_battle()
 	return state
+
+static func _roll_recovery_loot(loot_table: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var loot := {}
+	for item_id: String in loot_table:
+		var amount_range: Array = loot_table[item_id]
+		var amount := rng.randi_range(int(amount_range[0]), int(amount_range[1]))
+		if amount > 0:
+			loot[item_id] = amount
+	return loot
 
 func add_unit(unit: BattleUnit) -> Error:
 	if units.has(unit.id):
@@ -129,6 +142,7 @@ func attack_unit(attacker_id: String, target_id: String, fire_mode: String) -> D
 	var result := BattleRules.attack(map, attacker, target, items, fire_mode, rng)
 	if not result.get("ok", false):
 		return result
+	_record_kill(attacker, target, result)
 	_refresh_visibility()
 	_update_outcome()
 	result["outcome"] = outcome
@@ -160,6 +174,29 @@ func visible_tile_list(team: String) -> Array[Vector2i]:
 func unit_at(pos: Vector2i) -> BattleUnit:
 	return _unit_at(pos)
 
+func battle_result() -> Dictionary:
+	_update_outcome()
+	var recovered_items := {}
+	if outcome == OUTCOME_XCOM_WIN:
+		recovered_items = mission_recovery_loot.duplicate(true)
+		for unit_id: String in unit_order:
+			var unit := units[unit_id] as BattleUnit
+			if unit.team == BattleUnit.TEAM_ALIEN and not unit.is_alive() and unit.corpse_item != "":
+				recovered_items[unit.corpse_item] = int(recovered_items.get(unit.corpse_item, 0)) + 1
+	return {
+		"outcome": outcome,
+		"turn_number": turn_number,
+		"ufo_id": ufo_id,
+		"xcom_survivors": _unit_ids_for(BattleUnit.TEAM_XCOM, true),
+		"xcom_losses": _unit_ids_for(BattleUnit.TEAM_XCOM, false),
+		"aliens_killed": _unit_ids_for(BattleUnit.TEAM_ALIEN, false),
+		"aliens_survived": _unit_ids_for(BattleUnit.TEAM_ALIEN, true),
+		"xcom_kills": _kill_counts_for(BattleUnit.TEAM_XCOM),
+		"alien_kills": _kill_counts_for(BattleUnit.TEAM_ALIEN),
+		"score_xcom": _score_for_killed_aliens(),
+		"recovered_items": recovered_items
+	}
+
 func serialize() -> Dictionary:
 	var serialized_units: Array = []
 	for unit_id: String in unit_order:
@@ -170,6 +207,8 @@ func serialize() -> Dictionary:
 		"active_team": active_team,
 		"turn_number": turn_number,
 		"seed": seed_value,
+		"ufo_id": ufo_id,
+		"mission_recovery_loot": mission_recovery_loot.duplicate(true),
 		"outcome": outcome,
 		"visible_tiles": {
 			BattleUnit.TEAM_XCOM: _serialize_positions(visible_tiles[BattleUnit.TEAM_XCOM].keys()),
@@ -242,6 +281,7 @@ func _resolve_reaction_fire(mover: BattleUnit) -> Array[Dictionary]:
 			})
 			continue
 		var result := BattleRules.attack(map, reactor, mover, items, "snap", rng)
+		_record_kill(reactor, mover, result)
 		result["type"] = "reaction_fire"
 		result["actor"] = reactor.id
 		result["target"] = mover.id
@@ -271,6 +311,34 @@ func _can_react_to(reactor: BattleUnit, mover: BattleUnit) -> bool:
 func _reaction_chance(reactor: BattleUnit, mover: BattleUnit) -> int:
 	var reaction_delta := int(reactor.stats.get("reactions", 0)) - int(mover.stats.get("reactions", 0))
 	return clampi(50 + reaction_delta, 5, 95)
+
+func _record_kill(attacker: BattleUnit, target: BattleUnit, attack_result: Dictionary) -> void:
+	if attack_result.get("ok", false) and attack_result.get("target_killed", false):
+		attacker.kills_current += 1
+
+func _unit_ids_for(team: String, alive: bool) -> PackedStringArray:
+	var ids := PackedStringArray()
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.team == team and unit.is_alive() == alive:
+			ids.append(unit.id)
+	return ids
+
+func _kill_counts_for(team: String) -> Dictionary:
+	var counts := {}
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.team == team and unit.kills_current > 0:
+			counts[unit.id] = unit.kills_current
+	return counts
+
+func _score_for_killed_aliens() -> int:
+	var score := 0
+	for unit_id: String in unit_order:
+		var unit := units[unit_id] as BattleUnit
+		if unit.team == BattleUnit.TEAM_ALIEN and not unit.is_alive():
+			score += unit.score_kill
+	return score
 
 func _unit_at(pos: Vector2i) -> BattleUnit:
 	for unit_id: String in unit_order:

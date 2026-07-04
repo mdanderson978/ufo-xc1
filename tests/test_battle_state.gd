@@ -110,6 +110,29 @@ func test_attack_unit_updates_outcome_when_last_alien_dies() -> void:
 	assert_eq(target.health_current, 0)
 	assert_eq(state.outcome, BattleState.OUTCOME_XCOM_WIN)
 	assert_eq(result["outcome"], BattleState.OUTCOME_XCOM_WIN)
+	assert_eq(state.get_unit("xcom_1").kills_current, 1)
+
+func test_battle_result_recovers_ufo_loot_and_alien_corpses() -> void:
+	var state := _simple_state()
+	state.ufo_id = "small_scout"
+	state.mission_recovery_loot = {"alien_alloys": 2}
+	state.begin_battle()
+	var target := state.get_unit("sectoid_1")
+	target.health_current = 1
+	var result := {}
+	for i in range(10):
+		if state.outcome != BattleState.OUTCOME_ACTIVE:
+			break
+		state.get_unit("xcom_1").tu_current = 60
+		result = state.attack_unit("xcom_1", "sectoid_1", "aimed")
+		assert_true(result["ok"])
+	var battle_result := state.battle_result()
+	assert_eq(battle_result["outcome"], BattleState.OUTCOME_XCOM_WIN)
+	assert_eq(battle_result["ufo_id"], "small_scout")
+	assert_eq(battle_result["score_xcom"], 10)
+	assert_eq(battle_result["xcom_kills"]["xcom_1"], 1)
+	assert_eq(battle_result["recovered_items"]["alien_alloys"], 2)
+	assert_eq(battle_result["recovered_items"]["sectoid_corpse"], 1)
 
 func test_alien_win_when_last_xcom_unit_is_dead() -> void:
 	var state := _simple_state()
@@ -117,6 +140,17 @@ func test_alien_win_when_last_xcom_unit_is_dead() -> void:
 	state.get_unit("xcom_1").health_current = 0
 	state.end_turn()
 	assert_eq(state.outcome, BattleState.OUTCOME_ALIEN_WIN)
+
+func test_battle_result_recovers_no_loot_on_alien_win() -> void:
+	var state := _simple_state()
+	state.mission_recovery_loot = {"alien_alloys": 2}
+	state.begin_battle()
+	state.get_unit("xcom_1").health_current = 0
+	state.end_turn()
+	var battle_result := state.battle_result()
+	assert_eq(battle_result["outcome"], BattleState.OUTCOME_ALIEN_WIN)
+	assert_true(battle_result["recovered_items"].is_empty())
+	assert_eq(battle_result["xcom_losses"].size(), 1)
 
 func _simple_state() -> BattleState:
 	var map := BattleMap.new(8, 3, terrain)

@@ -2,6 +2,40 @@
 
 Newest entries first. See [ROADMAP.md](ROADMAP.md) for where this is all headed.
 
+## 2026-07-04 — Phase 2 mission result and recovery
+
+Battles now produce a structured result that the campaign layer can consume
+later. This closes the first tactical loop at the data level: kill aliens,
+win the battle, recover corpses and UFO loot.
+
+### Step 1: unit kill/recovery metadata
+- `BattleUnit` now tracks current mission kills.
+- Alien units carry `corpse_item` and `score_kill` from `data/aliens.json`.
+
+### Step 2: deterministic UFO recovery loot
+- `BattleState.from_crash_site()` now stores the UFO id and rolls recovery
+  loot from `data/ufos.json` using the mission RNG.
+- The rolled loot remains on the battle state until a battle result is built.
+
+### Step 3: battle result
+- Added `BattleState.battle_result()`.
+- Results include outcome, turn number, UFO id, XCOM survivors/losses, aliens
+  killed/survived, per-side kill counts, XCOM score from killed aliens, and
+  recovered items.
+- XCOM wins recover UFO loot plus corpses from killed aliens. Alien wins
+  recover nothing.
+
+### Step 4: debug result summary
+- The debug Battlescape status line now displays battle result summaries when
+  a move, attack, or alien turn ends the battle.
+
+### Step 5: tests
+- Added coverage for kill counting, UFO loot recovery, alien corpse recovery,
+  XCOM scoring, and no recovery after alien victory.
+
+### Commit note
+- Intended commit boundary: `Phase 2: add mission results and recovery`.
+
 ## 2026-07-04 — Phase 2 reaction fire
 
 Movement now risks enemy fire. This is the first deterministic, headless
